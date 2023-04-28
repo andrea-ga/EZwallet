@@ -141,8 +141,8 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 | Step#        | Description  |
 |  1     | User inserts username, email and password |  
 |  2     | Email, username and password sent to the Server |
-|  3   	 | Server accept the credential |
-|  4 	 | Server send back acknowledge |
+|  3   	 | Server accepts the credential |
+|  4 	 | Server sends back acknowledge |
 |  5 	 | Registration accepted |
 | 6 | A new account is created|
 
@@ -154,7 +154,7 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |  1     | User inserts username, email and password |  
 |  2     | Email, username and password sent to the Server |
 |  3   	 | Server doesn't accept the mail, because it is already used |
-|  4 	 | Server send back rejection |
+|  4 	 | Server sends back rejection |
 |  5 	 | Registration denied |
 
 
@@ -176,8 +176,8 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 | Step#        | Description  |
 |  1     | User inserts email and password |  
 |  2     | email and password validity controlled by the Server |
-|  3   	 | Server accept email and password |
-|  4 	 | Server send back acknowledge |
+|  3   	 | Server accepts email and password |
+|  4 	 | Server sends back acknowledge |
 |  5 	 | Login accepted |
 
 | Scenario 2.2 | Login failed (Exception)|
@@ -187,8 +187,8 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 | Step#        | Description  |
 |  1     | User inserts email and password |  
 |  2     | Email and password validity controlled by the Server |
-|  3   	 | Server reject email or password |
-|  4 	 | Server send back an error notification |
+|  3   	 | Server rejects email or password |
+|  4 	 | Server sends back an error notification |
 |  5 	 | Login Failed |
 
 ### Use case 3, User Logout
@@ -205,7 +205,7 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |  Precondition     | Already logged  |
 |  Post condition     | Logout performed |
 | Step#        | Description  |
-|  1     | User send a logout request  |  
+|  1     | User sends a logout request  |  
 |  2     | Logout request accepted by the server |
 | 3 | Logout succesful |
 
@@ -215,7 +215,7 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |  Precondition     | Login successful |
 |  Post condition     | A new category is added |
 |  Nominal Scenario     | Number of category increased of one component  |
-|  Variants     | The category already exist |
+|  Variants     | The category already exists |
 |  Exceptions     | - |
 
 | Scenario 4.1 | Creation of a new category (Nominal) |
@@ -223,22 +223,22 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |  Precondition     | Login successful  |
 |  Post condition     | New category created |
 | Step#        | Description  |
-|  1     | User insert name and color  |  
+|  1     | User inserts name and color  |  
 |  2     | Request sent to the Server |
 | 3 | Server acknowledge |
 | 4 | Category created |
 
 
-| Scenario 4.2 | Creation of a category that already exist (Variant) |
+| Scenario 4.2 | Creation of a category that already exists (Variant) |
 | ------------- |:-------------:| 
 |  Precondition     | Login successful  |
 |  Post condition     | New category created |
 | Step#        | Description  |
-|  1     | User insert name and color  |  
+|  1     | User inserts name and color  |  
 |  2     | Request sent to the Server |
 | 3 | Server acknowledge |
 | 4 | Category created |
-| 5 | A category with the same name and color already exist |
+| 5 | A category with the same name and color already exists |
 | 6 | There are two instances of the same category with different ID |
 
 ### Use case 5, Get categories
@@ -255,10 +255,10 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |  Precondition     | User already logged  |
 |  Post condition     | The list of categories is shown |
 | Step#        | Description  |
-|  1     | User send get_Categories request  |  
+|  1     | User sends get_Categories request  |  
 |  2     | Server receives the request |
-| 3 | The DB send back the categories already exist |
-| 4 | The user see the list of categories created | 
+| 3 | The DB sends back the categories already exist |
+| 4 | The user sees the list of categories created | 
 
 ### Use case 6, Creation of a new transaction  
 | Actors Involved        | User |
@@ -275,7 +275,7 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |      | User is logged in |					
 |  Post condition     | New transaction in list of transactions |
 | Step#        | Description  | 
-|  1     | User send a request with the transaction parameters |
+|  1     | User sends a request with the transaction parameters |
 |  2     | System saves the new transaction in the DB |
 |  3	 | New transaction is in the list |
 
@@ -305,7 +305,7 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |					| User is logged in |
 |  Post condition     | Transactions list shown |
 | Step#        | Description  |
-|  1     | User send a get_transaction request  |  
+|  1     | User sends a get_transaction request  |  
 |  2     | Server receives request |
 |  3   	 | DB sends back the list of transactions |
 |  4 	 | An empty list is shown |
@@ -324,9 +324,9 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |					| User is logged in |
 |  Post condition     | Transaction deleted |
 | Step#        | Description  |
-|  1     | User send a delete_transaction request with the transaction id |  
-|  2     | Server receive request |
-|  3   	 | DB delete the transaction |
+|  1     | User sends a delete_transaction request with the transaction id |  
+|  2     | Server receives request |
+|  3   	 | DB deletes the transaction |
 |  4 	 | Successful notification is sent back |
 
 ### Use case 9, Get users  
@@ -345,9 +345,9 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |					| User is logged in |
 |  Post condition     | Users list shown |
 | Step#        | Description  |
-|  1     | User send a getUsers request  |  
-|  2     | Server receive request |
-|  3   	 | Server send back the list of users |
+|  1     | User sends a getUsers request  |  
+|  2     | Server receives request |
+|  3   	 | Server sends back the list of users |
 |  4 	 | List of users is shown |
 
 
@@ -367,9 +367,9 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 |					| User is logged in |
 |  Post condition     | Users profile shown |
 | Step#        | Description  |
-|  1     | User send a getUserByUsername request  |  
-|  2     | Server receive request |
-|  3   	 | Server send back the users profile |
+|  1     | User sends a getUserByUsername request  |  
+|  2     | Server receives request |
+|  3   	 | Server sends back the users profile |
 |  4 	 | User profile is shown |
 
 
@@ -386,7 +386,7 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 
 # Defects
 - GatLabels function does not return the category color
-- Transactions and categories are general and not tied to the user who create them, but everyone can see everything
+- Transactions and categories are general and not tied to the user who created them, but everyone can see everything
 - No admin implementation
 - GetUsers can be done by users not logged in
 
