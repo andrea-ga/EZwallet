@@ -54,6 +54,41 @@ export const getUser = async (req, res) => {
  */
 export const createGroup = async (req, res) => {
     try {
+      const cookie = req.cookies;
+        if (!cookie.accessToken) {
+            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
+        }
+
+
+      const { groupName, memberList } = req.body;
+      const groupFind = await Group.findOne({ name : groupName });
+      //error 401 is returned if there is already an existing group with the same name
+      if (groupFind) return res.status(401).json({ message: "Group with the same name already exist" })
+     
+      let emailnot_founded =  []; 
+      let emailAlready_inGroup = []; 
+      let counter = 0 ;
+      for(let i= 0 ; i< memberList.lenght; i++) 
+      { let user = User.find({email : memberList[i].email}); 
+        if(!user)  //if the user is not present in the list of users
+          {counter+=1; 
+          email_notfounded.push(memberList[i].email)
+          }
+        else if (user) 
+        {
+           //check if is a group memeber list  TO COMPLETED
+           if(true) 
+           {
+            counter+=1;
+            emailAlready_inGroup.push(memberList[i].email);
+           }
+
+        }
+      }
+      if (counter == memberList.lenght)res.status(401).json({message : "the `memberEmails` either do not exist or are already in a group"})
+      const group = new Group ({groupName, memberList}) ;
+      group.save().then(gr => res.json(gr))
+      .catch(err => { throw err })
     } catch (err) {
         res.status(500).json(err.message)
     }
@@ -119,6 +154,24 @@ export const addToGroup = async (req, res) => {
  */
 export const removeFromGroup = async (req, res) => {
     try {
+      const cookie = req.cookies;
+        if (!cookie.accessToken) {
+            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
+        }
+        const { group , notInGroup , membersNotFound } = req.body;
+        const {name, mebers} = group.body; //members that are present
+        //find the group with the same name that is unique
+        const groupFind = await Group.findOne({ name : name });
+        if (!groupFind) return res.status(401).json({ message: "Group not found" })
+        //check if all the users are inside the users list
+        for(let i = 0 ; i< mebers.length ; i++)
+        {
+          if(!groupFind.members.includes(members[i]))return res.status(401).json({ message: "Users are not present in the Group user list" })   
+        }
+        //we don't controll the user that will be deleted but only if the remaining users were in the list 
+        //even in the previous version
+        Group.replaceOne(groupFind, group);  //replace the older group with the new one 
+        //NOT SURE
     } catch (err) {
         res.status(500).json(err.message)
     }
@@ -149,6 +202,15 @@ export const deleteUser = async (req, res) => {
  */
 export const deleteGroup = async (req, res) => {
     try {
+      if (!cookie.accessToken) {
+        return res.status(401).json({ message: "Unauthorized" }) // unauthorized
+    }
+    const { name } = req.body;
+    //find the group with the same name that is unique
+    const groupFind = await Group.findOne({ name : name });
+    if (!groupFind) return res.status(401).json({ message: "Group not found" })
+    Group.remove({name : name})
+      res.status(200).json({message : "Group successful deleted"})
     } catch (err) {
         res.status(500).json(err.message)
     }
