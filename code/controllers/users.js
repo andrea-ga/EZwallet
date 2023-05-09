@@ -1,6 +1,7 @@
 import { Group, User } from "../models/User.js";
 import { transactions } from "../models/model.js";
 import { verifyAuth } from "./utils.js";
+import mongoose from "mongoose";
 
 /**
  * Return all the users
@@ -117,6 +118,57 @@ export const getGroup = async (req, res) => {
  */
 export const addToGroup = async (req, res) => {
     try {
+        const cookie = req.cookies;
+
+        if(!cookie.accessToken || !cookie.refreshToken) {
+            return res.status(401).json({message: "Unauthorized"});
+        }
+
+        const finalGroup = {
+            group: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Group"
+            },
+            alreadyInGroup: [],
+            membersNotFound: []
+        }
+
+        const membersNotFound = [];
+        const alreadyInGroup = [];
+        const newMembers = [];
+
+        for(const m of req.body.members) {
+            const found = await User.findOne({email : m.email});
+            const already = await Group.findOne({members: { $elemMatch : {email : m.email}}});
+
+            if(!found)
+                membersNotFound.push(m);
+            else if(already)
+                alreadyInGroup.push(m);
+            else
+                newMembers.push(m);
+        }
+
+        if(newMembers.length === 0)
+            return res.status(401).json({message: "No new member"});
+
+        const groupName = req.params.name;
+        const group = await Group.findOneAndUpdate({name : groupName},
+            { $push: {
+                    members: newMembers
+                }
+            },
+            {new : true}
+        );
+
+        if(!group)
+            return res.status(401).json({message: "Group not found"});
+
+        finalGroup.group = group;
+        finalGroup.alreadyInGroup = alreadyInGroup;
+        finalGroup.membersNotFound = membersNotFound;
+
+        res.status(200).json(finalGroup);
     } catch (err) {
         res.status(500).json(err.message)
     }
