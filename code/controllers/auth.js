@@ -12,6 +12,7 @@ import { verifyAuth } from './utils.js';
  */
 export const register = async (req, res) => {
     try {
+        console.log("Registration");
         const { username, email, password } = req.body;
         const existingUser = await User.findOne({ email: req.body.email });
         if (existingUser) return res.status(400).json({ message: "you are already registered" });
@@ -21,7 +22,7 @@ export const register = async (req, res) => {
             email,
             password: hashedPassword,
         });
-        res.status(200).json('user added succesfully');
+        res.status(200).json({message : 'user added succesfully'});
     } catch (err) {
         res.status(400).json(err);
     }
@@ -36,17 +37,19 @@ export const register = async (req, res) => {
  */
 export const registerAdmin = async (req, res) => {
     try {
+        console.log("RegisterAdmin");
         const { username, email, password } = req.body
-        const existingUser = await User.findOne({ email: req.body.email });
+        const existingUser = await User.findOne({ email: email });  
         if (existingUser) return res.status(400).json({ message: "you are already registered" });
         const hashedPassword = await bcrypt.hash(password, 12);
+        //problem ???
         const newUser = await User.create({
             username,
             email,
             password: hashedPassword,
             role: "Admin"
         });
-        res.status(200).json('admin added succesfully');
+        res.status(200).json('user added succesfully');
     } catch (err) {
         res.status(500).json(err);
     }
@@ -63,6 +66,7 @@ export const registerAdmin = async (req, res) => {
     - success 200 is returned if the user is already logged in
  */
 export const login = async (req, res) => {
+    console.log("login");
     const { email, password } = req.body
     const cookie = req.cookies
     const existingUser = await User.findOne({ email: email })

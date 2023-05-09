@@ -1,3 +1,4 @@
+import { group } from "console";
 import { Group, User } from "../models/User.js";
 import { transactions } from "../models/model.js";
 import { verifyAuth } from "./utils.js";
@@ -60,35 +61,38 @@ export const createGroup = async (req, res) => {
         }
 
 
-      const { groupName, memberList } = req.body;
-      const groupFind = await Group.findOne({ name : groupName });
+      const { name , membersEmails } = req.body;
+      const groupFind = await Group.findOne({ name : name });
       //error 401 is returned if there is already an existing group with the same name
       if (groupFind) return res.status(401).json({ message: "Group with the same name already exist" })
      
       let emailnot_founded =  []; 
       let emailAlready_inGroup = []; 
       let counter = 0 ;
-      for(let i= 0 ; i< memberList.lenght; i++) 
-      { let user = User.find({email : memberList[i].email}); 
+      for(let i= 0 ; i< membersEmails.length; i++) 
+      { let user = await User.find({email : membersEmails[i].email}); 
         if(!user)  //if the user is not present in the list of users
           {counter+=1; 
-          email_notfounded.push(memberList[i].email)
+          email_notfounded.push(membersEmails[i].email)
           }
         else if (user) 
         {
            //check if is a group memeber list  TO COMPLETED
            if(true) 
            {
-            counter+=1;
-            emailAlready_inGroup.push(memberList[i].email);
+            //counter+=1;
+            emailAlready_inGroup.push(membersEmails[i].email);
            }
 
         }
       }
-      if (counter == memberList.lenght)res.status(401).json({message : "the `memberEmails` either do not exist or are already in a group"})
-      const group = new Group ({groupName, memberList}) ;
-      group.save().then(gr => res.json(gr))
-      .catch(err => { throw err })
+      if (counter == membersEmails.lenght)res.status(401).json({message : "the `memberEmails` either do not exist or are already in a group"})
+      const group = await Group.create({
+        name, 
+        membersEmails  //there in an error -> it doesn't save the list of users
+      });
+     console.log(membersEmails);
+     res.status(200).json(group);
     } catch (err) {
         res.status(500).json(err.message)
     }
@@ -159,15 +163,18 @@ export const removeFromGroup = async (req, res) => {
             return res.status(401).json({ message: "Unauthorized" }) // unauthorized
         }
         const { group , notInGroup , membersNotFound } = req.body;
-        const {name, mebers} = group.body; //members that are present
+        const name = group.name; //members that are present
+        const members = group.members ;
         //find the group with the same name that is unique
         const groupFind = await Group.findOne({ name : name });
         if (!groupFind) return res.status(401).json({ message: "Group not found" })
         //check if all the users are inside the users list
-        for(let i = 0 ; i< mebers.length ; i++)
+        let count= 0; 
+        for(let i = 0 ; i< members.length ; i++)
         {
-          if(!groupFind.members.includes(members[i]))return res.status(401).json({ message: "Users are not present in the Group user list" })   
+          if(!groupFind.members.includes(members[i]))count++
         }
+        if(count==members.length)return res.status(401).json({ message: "Users are not present in the Group user list" })
         //we don't controll the user that will be deleted but only if the remaining users were in the list 
         //even in the previous version
         Group.replaceOne(groupFind, group);  //replace the older group with the new one 
@@ -205,6 +212,7 @@ export const deleteGroup = async (req, res) => {
       if (!cookie.accessToken) {
         return res.status(401).json({ message: "Unauthorized" }) // unauthorized
     }
+    console.log("DELETEGROUP");
     const { name } = req.body;
     //find the group with the same name that is unique
     const groupFind = await Group.findOne({ name : name });
