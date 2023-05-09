@@ -69,6 +69,8 @@ export const createGroup = async (req, res) => {
  */
 export const getGroups = async (req, res) => {
     try {
+        const groups = await Group.find();
+        res.status(200).json(groups);
     } catch (err) {
         res.status(500).json(err.message)
     }
@@ -84,6 +86,19 @@ export const getGroups = async (req, res) => {
  */
 export const getGroup = async (req, res) => {
     try {
+        const cookie = req.cookies;
+
+        if(!cookie.accessToken || !cookie.refreshToken) {
+            return res.status(401).json({message: "Unauthorized"});
+        }
+
+        const groupName = req.params.name;
+        const group = await Group.findOne({name : groupName});
+
+        if(!group)
+            return res.status(401).json({message: "Group not found"});
+
+        res.status(200).json(group);
     } catch (err) {
         res.status(500).json(err.message)
     }
