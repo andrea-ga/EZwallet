@@ -43,6 +43,8 @@ export const verifyAuth = (req, res, info) => {
         return false;
     }
     try {
+        const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
+        const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
         /*
         //verify the order of the conditions
         // third part not done yet
@@ -98,8 +100,7 @@ export const verifyAuth = (req, res, info) => {
         }
         */
         
-        const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
-        const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
+        
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
             res.status(401).json({ message: "Token is missing information" })
             return false

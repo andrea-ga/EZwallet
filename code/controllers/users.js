@@ -56,6 +56,7 @@ export const getUser = async (req, res) => {
 export const createGroup = async (req, res) => {
     try {
       const cookie = req.cookies;
+      console.log(cookie); //DEBUG
         if (!cookie.accessToken) {
             return res.status(401).json({ message: "Unauthorized" }) // unauthorized
         }
@@ -89,9 +90,9 @@ export const createGroup = async (req, res) => {
       if (counter == membersEmails.lenght)res.status(401).json({message : "the `memberEmails` either do not exist or are already in a group"})
       const group = await Group.create({
         name, 
-        membersEmails  //there in an error -> it doesn't save the list of users
+        membersEmails  //there is an error -> it doesn't save the list of users
       });
-     console.log(membersEmails);
+     //console.log(membersEmails); //DEBUG
      res.status(200).json(group);
     } catch (err) {
         res.status(500).json(err.message)
@@ -207,17 +208,17 @@ export const deleteUser = async (req, res) => {
   - Optional behavior:
     - error 401 is returned if the group does not exist
  */
-export const deleteGroup = async (req, res) => {
+export const deleteGroup = async (req, res) => {   //still to implement Admin and not user
     try {
+    const cookie = req.cookies;
       if (!cookie.accessToken) {
         return res.status(401).json({ message: "Unauthorized" }) // unauthorized
     }
-    console.log("DELETEGROUP");
     const { name } = req.body;
     //find the group with the same name that is unique
     const groupFind = await Group.findOne({ name : name });
     if (!groupFind) return res.status(401).json({ message: "Group not found" })
-    Group.remove({name : name})
+    Group.remove({name : name}); 
       res.status(200).json({message : "Group successful deleted"})
     } catch (err) {
         res.status(500).json(err.message)
