@@ -43,10 +43,61 @@ export const verifyAuth = (req, res, info) => {
         return false;
     }
     try {
-        /*if (info.authType) */
+        /*
+        //verify the order of the conditions
+        // third part not done yet
+        const currentUser = User.findOne({ emal : req.email }) ; 
+        if (info.authType == "User") 
+        {
+            if( decodedAccessToken.username != currentUser.username|| decodedRefreshToken.username != currentUser.username)
+            {
+                res.status(401).json({ message: "Wrong username on cookies" });
+                return ?? ;
+            }
+            elif( !decodedAccessToken || decodedRefreshToken.username != currentUser.username)
+            { 
+                res.status(401).json({ message: "Wrong username on cookies 2" });
+                return ??;
+            }
+            elif( decodedAccessToken.username == currentUser.username && decodedRefreshToken == currentUser.username)
+            {
+                res.status(200).json({ message: "Success" })
+                return ?? ;
+            }
+            elif( !decodedAccessToken && decodedRefreshToken == currentUser.username)
+            { 
+                res.status(401).json({ message: "Success with AccessToken expired" });
+                return ??;
+            }
+
+        }
+
+        elif (info.authType == "Admin")
+        {
+            if( decodedAccessToken.role != "Admin" || decodedRefreshToken.role != "Admin")
+            {
+                res.status(401).json({ message: "Wrong role" });
+                return ?? ;
+            }
+             elif( !decodedAccessToken || decodedRefreshToken.role != "Admin")
+            { 
+                res.status(401).json({ message: "Wrong role 2" });
+                return ??;
+            }
+            elif( decodedAccessToken.role == "Admin" || decodedRefreshToken.role == "Admin")
+            {
+                res.status(200).json({ message: "Success" });
+                return ?? ;
+            }
+            elif( !decodedAccessToken.role || decodedRefreshToken.role == "Admin")
+            {
+                res.status(200).json({ message: "Success 2" });
+                return ?? ;
+            }
+
+        }
+        */
         
-
-
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
         const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
