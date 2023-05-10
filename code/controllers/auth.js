@@ -70,7 +70,7 @@ export const login = async (req, res) => {
     const { email, password } = req.body
     const cookie = req.cookies
     const existingUser = await User.findOne({ email: email })
-    if (verifyAuth(req, res, { authType: "Simple" })) return res.status(200).json("you are already logged in")
+    //if (verifyAuth(req, res, { authType: "Simple" })) return res.status(200).json("you are already logged in")
     if (!existingUser) return res.status(400).json('please you need to register')
     try {
         const match = await bcrypt.compare(password, existingUser.password)
