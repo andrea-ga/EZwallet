@@ -70,6 +70,18 @@ export const createGroup = async (req, res) => {
  */
 export const getGroups = async (req, res) => {
     try {
+        const cookie = req.cookies;
+
+        if(!cookie.accessToken || !cookie.refreshToken) {
+            return res.status(401).json({message: "Unauthorized"});
+        }
+
+        const user = await User.findOne({refreshToken: cookie.refreshToken});
+
+        if(user.role !== "Admin") {
+            return res.status(401).json({message: "User is not an Admin"});
+        }
+
         const groups = await Group.find();
         res.status(200).json(groups);
     } catch (err) {
