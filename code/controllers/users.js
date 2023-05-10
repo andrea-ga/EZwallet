@@ -1,7 +1,6 @@
 import { Group, User } from "../models/User.js";
 import { transactions } from "../models/model.js";
 import { verifyAuth } from "./utils.js";
-import mongoose from "mongoose";
 
 /**
  * Return all the users
@@ -136,15 +135,6 @@ export const addToGroup = async (req, res) => {
             return res.status(401).json({message: "Unauthorized"});
         }
 
-        const finalGroup = {
-            group: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Group"
-            },
-            alreadyInGroup: [],
-            membersNotFound: []
-        }
-
         const membersNotFound = [];
         const alreadyInGroup = [];
         const newMembers = [];
@@ -158,7 +148,7 @@ export const addToGroup = async (req, res) => {
             else if(already)
                 alreadyInGroup.push(m);
             else
-                newMembers.push(m);
+                newMembers.push(found);
         }
 
         if(newMembers.length === 0)
@@ -176,9 +166,11 @@ export const addToGroup = async (req, res) => {
         if(!group)
             return res.status(401).json({message: "Group not found"});
 
-        finalGroup.group = group;
-        finalGroup.alreadyInGroup = alreadyInGroup;
-        finalGroup.membersNotFound = membersNotFound;
+        const finalGroup = {
+            group: group,
+            alreadyInGroup: alreadyInGroup,
+            membersNotFound: membersNotFound
+        }
 
         res.status(200).json(finalGroup);
     } catch (err) {
