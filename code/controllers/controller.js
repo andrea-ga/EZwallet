@@ -228,9 +228,22 @@ export const deleteTransaction = async (req, res) => {
   - Optional behavior:
     - error 401 is returned if at least one of the `_ids` does not have a corresponding transaction. Transactions that have an id are not deleted in this case
  */
+
 export const deleteTransactions = async (req, res) => {
-    try {
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
+        try {
+    
+            const cookies = req.cookies
+            const ids = req.body.ids
+    
+            // need to add check if admin is present or not 
+            if (!cookies.accessToken ){
+                return res.status(401).json({message: "Unauthorized"})
+            }
+            for (const id of ids){
+                let data = await transactions.deleteOne({ _id: id });
+            }
+            return res.json("All the transaction deleted");
+        } catch (error) {
+            res.status(400).json({ error: error.message })
+        }
 }
