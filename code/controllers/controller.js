@@ -48,6 +48,20 @@ export const updateCategory = async (req, res) => {
  */
 export const deleteCategory = async (req, res) => {
     try {
+        function deleteCategory(categoryName) {
+        // Find the index of the category with the given name
+        const categoryIndex = ezwallet.categories.findIndex(
+          (category) => category.name === categoryName
+        );
+      
+        // If the category exists, remove it from the array
+        if (categoryIndex !== -1) {
+          ezwallet.categories.splice(categoryIndex, 1);
+          console.log(`Category "${categoryName}" deleted`);
+        } else {
+          console.log(`Category "${categoryName}" not found`);
+        }
+      }
 
     } catch (error) {
         res.status(400).json({ error: error.message })
