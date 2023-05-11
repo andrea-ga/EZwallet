@@ -31,26 +31,32 @@ export const createCategory = (req, res) => {
     - error 401 returned if the specified category does not exist
     - error 401 is returned if new parameters have invalid values
  */
-export const updateCategory = async (req, res) => {
-    try {
-        function updateCategory(categoryName, newCategoryName) {
-            // Find the index of the category with the given name
-            const categoryIndex = ezwallet.categories.findIndex(
-              (category) => category.name === categoryName
-            );
-            
-            // If the category exists, update its name
-            if (categoryIndex !== -1) {
-              ezwallet.categories[categoryIndex].name = newCategoryName;
-              console.log(`Category "${categoryName}" updated to "${newCategoryName}"`);
-            } else {
-              console.log(`Category "${categoryName}" not found`);
-            }
-          }
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
-}
+    function updateCategory(categoryName, newCategoryName) {
+        // Find the index of the category with the given name
+        const categoryIndex = ezwallet.categories.findIndex(
+          (category) => category.name === categoryName
+        );
+        
+        // If the category exists, update its name
+        if (categoryIndex !== -1) {
+          ezwallet.categories[categoryIndex].name = newCategoryName;
+          console.log(`Category "${categoryName}" updated to "${newCategoryName}"`);
+        } else {
+          console.log(`Category "${categoryName}" not found`);
+        }
+      }
+      
+      export const updateCategory = async (req, res) => {
+        try {
+          // Call the updateCategory function with the provided parameters
+          updateCategory(req.params.categoryName, req.body.newCategoryName);
+          res.status(200).json({ message: "Category updated successfully" });
+        } catch (error) {
+          res.status(400).json({ error: error.message });
+        }
+      };
+  }
+};
 
 /**
  * Delete a category
