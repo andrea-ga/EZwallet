@@ -36,7 +36,6 @@ export const createCategory = (req, res) => {
         const categoryIndex = ezwallet.categories.findIndex(
           (category) => category.name === categoryName
         );
-        
         // If the category exists, update its name
         if (categoryIndex !== -1) {
           ezwallet.categories[categoryIndex].name = newCategoryName;
