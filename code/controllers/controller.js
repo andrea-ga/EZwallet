@@ -173,6 +173,15 @@ export const getAllTransactions = async (req, res) => {
  */
 export const getTransactionsByUser = async (req, res) => {
     try {
+        unction getTransactionByUser(userName) {
+            // Filter the transactions array to get only the ones made by the given user
+            const userTransactions = ezwallet.transactions.filter(
+              (transaction) => transaction.user === userName
+            );
+          
+            // Return the filtered array
+            return userTransactions;
+          }
         //Distinction between route accessed by Admins or Regular users for functions that can be called by both
         //and different behaviors and access rights
         if (req.url.indexOf("/transactions/users/") >= 0) {
