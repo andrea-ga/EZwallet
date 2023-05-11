@@ -164,12 +164,54 @@ export const getTransactionsByUser = async (req, res) => {
     - empty array is returned if there are no transactions made by the user with the specified category
     - error 401 is returned if the user or the category does not exist
  */
-export const getTransactionsByUserByCategory = async (req, res) => {
-    try {
-    } catch (error) {
-        res.status(400).json({ error: error.message })
+
+    export const getTransactionsByUserByCategory = async (req, res) => {
+    
+        console.log(req.params);
+        try {
+            const cookie = req.cookies
+            if (!cookie.accessToken) {
+                return res.status(401).json({ message: "Unauthorized" }) // unauthorized
+            }
+
+            const user = await User.findOne({ "username": req.params.username })
+            if (!user) return res.status(401).json({ message: "User not found" })
+
+            
+            /**
+             * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
+             */
+    
+            //let type = req.params[2]
+            //let username = req.params[1]
+            
+            /*
+            for (const el in req.params){
+                console.log(typeof req.params[el])
+            }
+            */
+            transactions.aggregate([
+                {$match: { type: req.params.category, username: req.params.username}},
+                {
+                    $lookup: {
+                        from: "categories",
+                        localField: "type",
+                        foreignField: "type",
+                        as: "categories_info"
+                    }
+                },
+                { $unwind: "$categories_info" }
+                
+                //{ $match: {type: req.params.category}},
+            ]).then((result) => {
+                let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }))
+                res.json(data);
+            }).catch(error => { throw (error) })
+        } catch (error) {
+            res.status(400).json({ error: error.message })
+        }
+    
     }
-}
 
 /**
  * Return all transactions made by members of a specific group
