@@ -33,7 +33,20 @@ export const createCategory = (req, res) => {
  */
 export const updateCategory = async (req, res) => {
     try {
-
+        function updateCategory(categoryName, newCategoryName) {
+            // Find the index of the category with the given name
+            const categoryIndex = ezwallet.categories.findIndex(
+              (category) => category.name === categoryName
+            );
+            
+            // If the category exists, update its name
+            if (categoryIndex !== -1) {
+              ezwallet.categories[categoryIndex].name = newCategoryName;
+              console.log(`Category "${categoryName}" updated to "${newCategoryName}"`);
+            } else {
+              console.log(`Category "${categoryName}" not found`);
+            }
+          }
     } catch (error) {
         res.status(400).json({ error: error.message })
     }
