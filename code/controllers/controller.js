@@ -180,25 +180,31 @@ export const getAllTransactions = async (req, res) => {
     - empty array is returned if there are no transactions made by the user
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
-export const getTransactionsByUser = async (req, res) => {
-    try {
-        function getTransactionByUser(userName) {
-            // Filter the transactions array to get only the ones made by the given user
-            const userTransactions = ezwallet.transactions.filter(
-              (transaction) => transaction.user === userName
-            );
-          
-            // Return the filtered array
-            return userTransactions;
-          }
-        //Distinction between route accessed by Admins or Regular users for functions that can be called by both
-        //and different behaviors and access rights
-        if (req.url.indexOf("/transactions/users/") >= 0) {
-        } else {
+    async function getTransactionByUser(userId) {
+        try {
+          const transactions = await Transaction.find({
+            $or: [{ senderId: userId }, { receiverId: userId }],
+          });
+          return transactions;
+        } catch (error) {
+          console.error(error);
+          throw new Error("Error retrieving transactions");
         }
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
+      }
+      
+      export const getTransactionsByUser = async (req, res) => {
+        try {
+          const userId = req.params.userId;
+          
+          // Call the getTransactionByUser function to retrieve transactions for the user
+          const transactions = await getTransactionByUser(userId);
+      
+          res.status(200).json(transactions);
+        } catch (error) {
+          res.status(500).json({ error: error.message });
+        }
+      }
+      
 }
 
 /**
