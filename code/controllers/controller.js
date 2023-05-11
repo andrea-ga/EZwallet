@@ -31,13 +31,31 @@ export const createCategory = (req, res) => {
     - error 401 returned if the specified category does not exist
     - error 401 is returned if new parameters have invalid values
  */
-export const updateCategory = async (req, res) => {
-    try {
-
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
-}
+    function updateCategory(categoryName, newCategoryName) {
+        // Find the index of the category with the given name
+        const categoryIndex = ezwallet.categories.findIndex(
+          (category) => category.name === categoryName
+        );
+        // If the category exists, update its name
+        if (categoryIndex !== -1) {
+          ezwallet.categories[categoryIndex].name = newCategoryName;
+          console.log(`Category "${categoryName}" updated to "${newCategoryName}"`);
+        } else {
+          console.log(`Category "${categoryName}" not found`);
+        }
+      }
+      
+      export const updateCategory = async (req, res) => {
+        try {
+          // Call the updateCategory function with the provided parameters
+          updateCategory(req.params.categoryName, req.body.newCategoryName);
+          res.status(200).json({ message: "Category updated successfully" });
+        } catch (error) {
+          res.status(400).json({ error: error.message });
+        }
+      };
+  }
+};
 
 /**
  * Delete a category
@@ -46,13 +64,31 @@ export const updateCategory = async (req, res) => {
   - Optional behavior:
     - error 401 is returned if the specified category does not exist
  */
-export const deleteCategory = async (req, res) => {
-    try {
-
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
-}
+    function deleteCategory(categoryName) {
+        // Find the index of the category with the given name
+        const categoryIndex = ezwallet.categories.findIndex(
+          (category) => category.name === categoryName
+        );
+        
+        // If the category exists, remove it from the array
+        if (categoryIndex !== -1) {
+          ezwallet.categories.splice(categoryIndex, 1);
+          console.log(`Category "${categoryName}" deleted`);
+        } else {
+          console.log(`Category "${categoryName}" not found`);
+        }
+      }
+      
+      export const deleteCategory = async (req, res) => {
+        try {
+          // Call the deleteCategory function with the provided parameter
+          deleteCategory(req.params.categoryName);
+          res.status(200).json({ message: "Category deleted successfully" });
+        } catch (error) {
+          res.status(400).json({ error: error.message });
+        }
+      };
+      
 
 /**
  * Return all the categories
@@ -144,16 +180,31 @@ export const getAllTransactions = async (req, res) => {
     - empty array is returned if there are no transactions made by the user
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
-export const getTransactionsByUser = async (req, res) => {
-    try {
-        //Distinction between route accessed by Admins or Regular users for functions that can be called by both
-        //and different behaviors and access rights
-        if (req.url.indexOf("/transactions/users/") >= 0) {
-        } else {
+    async function getTransactionByUser(userId) {
+        try {
+          const transactions = await Transaction.find({
+            $or: [{ senderId: userId }, { receiverId: userId }],
+          });
+          return transactions;
+        } catch (error) {
+          console.error(error);
+          throw new Error("Error retrieving transactions");
         }
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
+      }
+      
+      export const getTransactionsByUser = async (req, res) => {
+        try {
+          const userId = req.params.userId;
+          
+          // Call the getTransactionByUser function to retrieve transactions for the user
+          const transactions = await getTransactionByUser(userId);
+      
+          res.status(200).json(transactions);
+        } catch (error) {
+          res.status(500).json({ error: error.message });
+        }
+      }
+      
 }
 
 /**
