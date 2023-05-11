@@ -64,14 +64,12 @@ export const createCategory = (req, res) => {
   - Optional behavior:
     - error 401 is returned if the specified category does not exist
  */
-export const deleteCategory = async (req, res) => {
-    try {
-        function deleteCategory(categoryName) {
+    function deleteCategory(categoryName) {
         // Find the index of the category with the given name
         const categoryIndex = ezwallet.categories.findIndex(
           (category) => category.name === categoryName
         );
-      
+        
         // If the category exists, remove it from the array
         if (categoryIndex !== -1) {
           ezwallet.categories.splice(categoryIndex, 1);
@@ -80,11 +78,17 @@ export const deleteCategory = async (req, res) => {
           console.log(`Category "${categoryName}" not found`);
         }
       }
-
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
-}
+      
+      export const deleteCategory = async (req, res) => {
+        try {
+          // Call the deleteCategory function with the provided parameter
+          deleteCategory(req.params.categoryName);
+          res.status(200).json({ message: "Category deleted successfully" });
+        } catch (error) {
+          res.status(400).json({ error: error.message });
+        }
+      };
+      
 
 /**
  * Return all the categories
