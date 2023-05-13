@@ -12,6 +12,8 @@ import { verifyAuth } from "./utils.js";
  */
 export const getUsers = async (req, res) => {
     try {
+    //verify if the user send the request is an admin or not 
+    if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
         const users = await User.find();
         res.status(200).json(users);
     } catch (error) {
@@ -79,7 +81,8 @@ export const createGroup = async (req, res) => {
             emailnot_founded.push(memberEmails[i].email);
           }
         else if (user) 
-        {     let find = await Group.findOne( 
+        {     
+          let find = await Group.findOne( 
               {
                 members : {$elemMatch : { "email" : user.email }}
               }
@@ -96,7 +99,7 @@ export const createGroup = async (req, res) => {
            }
         }
       } 
-      if (counter === memberEmails.length)res.status(401).json({message : "the `memberEmails` either do not exist or are already in a group"})
+      if (counter === memberEmails.length)return res.status(401).json({message : "the `memberEmails` either do not exist or are already in a group"})
       else 
       {
         const group = new Group({name, members});
