@@ -37,8 +37,8 @@ export const handleDateFilterParams = (req) => {
  */
 export const verifyAuth = (req, res, info) => {
     const cookie = req.cookies
-    // !cookie.accessToken || 
-    if (!cookie.refreshToken) {
+     
+    if (!cookie.accessToken ||!cookie.refreshToken) {
         //res.status(401).json({ message: "Unauthorized" });
         return false;
     }
@@ -91,7 +91,7 @@ export const verifyAuth = (req, res, info) => {
                 //res.status(200).json({ message: "Success" });
                 return true;
             }
-            else if( !decodedAccessToken.role && decodedRefreshToken.role == "Admin")
+            else if( !decodedAccessToken && decodedRefreshToken.role == "Admin")
             {
                 //res.status(200).json({ message: "Success 2" });
                 return true;
@@ -108,7 +108,7 @@ export const verifyAuth = (req, res, info) => {
         else if (info.authType == "Group")  
         {   
             
-
+            
             if( decodedAccessToken.email || decodedRefreshToken.email ) //to implement if it is not in the group
             {
                 res.status(401).json({ message: "Wrong role" });

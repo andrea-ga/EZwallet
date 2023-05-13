@@ -332,10 +332,7 @@ export const deleteUser = async (req, res) => {
  */
 export const deleteGroup = async (req, res) => {   //still to implement Admin and not user
     try {
-    const cookie = req.cookies;
-      if (!cookie.accessToken) {
-        return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-    }
+    if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
     const  name  = req.body.name;
     //find the group with the same name that is unique
     const groupFind = await Group.findOne({ name : name });

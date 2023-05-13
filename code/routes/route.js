@@ -38,7 +38,7 @@ router.patch("/groups/:name/remove", removeFromGroup)
 /**
  * Admin-exclusive routes. The functions called are the same and must have different behaviors depending on the route.
  */
-router.post("/categories", createCategory) 
+router.post("/categories", createCategory) //auth done, it is no present the validation of all the values
 router.patch("/categories/:type", updateCategory) 
 router.delete("/categories", deleteCategory) 
 router.get("/transactions", getAllTransactions) 
@@ -50,7 +50,7 @@ router.get("/transactions/groups/:name/category/:category", getTransactionsByGro
 router.get('/users', getUsers)   //auth done
 router.delete("/users", deleteUser)
 router.get("/groups", getGroups)
-router.delete("/groups", deleteGroup)
+router.delete("/groups", deleteGroup) //auth done
 router.patch("/groups/:name/insert", addToGroup)
 router.patch("/groups/:name/pull", removeFromGroup)
 

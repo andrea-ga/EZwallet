@@ -9,10 +9,7 @@ import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./
  */
 export const createCategory = (req, res) => {
     try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+       if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
         const { type, color } = req.body;
         const new_categories = new categories({ type, color });
         new_categories.save()
