@@ -128,16 +128,8 @@ export const getGroups = async (req, res) => {
     try {
         const cookie = req.cookies;
 
-        if(!cookie.accessToken || !cookie.refreshToken) {
-            return res.status(401).json({message: "Unauthorized"});
-        }
-
-        const user = await User.findOne({refreshToken: cookie.refreshToken});
-
-        if(user.role !== "Admin") {
-            return res.status(401).json({message: "User is not an Admin"});
-        }
-
+        if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
+        
         const groups = await Group.find();
         res.status(200).json(groups);
     } catch (err) {
@@ -318,6 +310,8 @@ export const removeFromGroup = async (req, res) => {
  */
 export const deleteUser = async (req, res) => {
     try {
+    if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
+
     } catch (err) {
         res.status(500).json(err.message)
     }

@@ -44,6 +44,7 @@ export const createCategory = (req, res) => {
       
       export const updateCategory = async (req, res) => {
         try {
+          if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
           // Call the updateCategory function with the provided parameters
           updateCategoryFunc(req.params.categoryName, req.body.newCategoryName);
           res.status(200).json({ message: "Category updated successfully" });
@@ -77,6 +78,7 @@ export const createCategory = (req, res) => {
       
       export const deleteCategory = async (req, res) => {
         try {
+          if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
           // Call the deleteCategory function with the provided parameter
           deleteCategoryFunc(req.params.categoryName);
           res.status(200).json({ message: "Category deleted successfully" });

@@ -39,8 +39,8 @@ router.patch("/groups/:name/remove", removeFromGroup)
  * Admin-exclusive routes. The functions called are the same and must have different behaviors depending on the route.
  */
 router.post("/categories", createCategory) //auth done, it is no present the validation of all the values
-router.patch("/categories/:type", updateCategory) 
-router.delete("/categories", deleteCategory) 
+router.patch("/categories/:type", updateCategory) //auth done
+router.delete("/categories", deleteCategory) //auth done
 router.get("/transactions", getAllTransactions) 
 router.delete("/transactions", deleteTransactions) 
 router.get("/transactions/users/:username", getTransactionsByUser)
@@ -48,8 +48,8 @@ router.get("/transactions/users/:username/category/:category", getTransactionsBy
 router.get("/transactions/groups/:name", getTransactionsByGroup)
 router.get("/transactions/groups/:name/category/:category", getTransactionsByGroupByCategory)
 router.get('/users', getUsers)   //auth done
-router.delete("/users", deleteUser)
-router.get("/groups", getGroups)
+router.delete("/users", deleteUser) //auth done 
+router.get("/groups", getGroups) //auth done
 router.delete("/groups", deleteGroup) //auth done
 router.patch("/groups/:name/insert", addToGroup)
 router.patch("/groups/:name/pull", removeFromGroup)
