@@ -61,10 +61,9 @@ export const createGroup = async (req, res) => {
             return res.status(401).json({ message: "Unauthorized" }) // unauthorized
         }
 
-
       const { name , memberEmails } = req.body;
       const groupFind = await Group.findOne({ name : name });
-      let members = memberEmails;  //change the name to have the same name of the model
+      let members = [];  //change the name to have the same name of the model
       //error 401 is returned if there is already an existing group with the same name
       if (groupFind) return res.status(401).json({ message: "Group with the same name already exist" })
      
@@ -72,33 +71,35 @@ export const createGroup = async (req, res) => {
       let emailAlready_inGroup = []; 
       let counter = 0 ;
 
-      for(let i= 0 ; i< members.length; i++) 
-      { let user = await User.findOne({email : members[i].email}); 
-        console.log(user);
+      for(let i= 0 ; i< memberEmails.length; i++) 
+      { let user = await User.findOne({email : memberEmails[i].email}); 
         if(!user)  //if the user is not present in the list of users
-          {counter+=1; 
-          emailnot_founded.push(members[i].email)
-          console.log("not founded "+i);
-
+          {
+            counter+=1; 
+            emailnot_founded.push(memberEmails[i].email);
           }
         else if (user) 
-        {
-           //check if is a group memeber list  TO COMPLETED
-           if(true) 
+        {     let find = await Group.findOne( 
+              {
+                members : {$elemMatch : { "email" : user.email }}
+              }
+            );
+            
+           if(find) 
            {
-            //counter+=1;
-            emailAlready_inGroup.push(members[i].email);
+            counter+=1;
+            emailAlready_inGroup.push(memberEmails[i].email);
            }
-           
-           let mem = members[i].email;
-           let id = user.id
-           members[i] = {mem ,id};
-
+           else 
+           {
+           members.push( user );
+           }
         }
       } 
-      console.log(members.length)  //DEBUG
-      if (counter == members.length)res.status(401).json({message : "the `memberEmails` either do not exist or are already in a group"})
-      const group = new Group({name, members})
+      if (counter === memberEmails.length)res.status(401).json({message : "the `memberEmails` either do not exist or are already in a group"})
+      else 
+      {
+        const group = new Group({name, members});
       group.save()
       .then( () => res.json(   {
         group , 
@@ -106,6 +107,7 @@ export const createGroup = async (req, res) => {
         "membersNotFound" : emailnot_founded 
       }))
       .catch(err => { throw err })
+      }
     } catch (err) {
         res.status(500).json(err.message)
     }
@@ -242,30 +244,61 @@ export const addToGroup = async (req, res) => {
  */
 export const removeFromGroup = async (req, res) => {
     try {
+      
       const cookie = req.cookies;
         if (!cookie.accessToken) {
             return res.status(401).json({ message: "Unauthorized" }) // unauthorized
         }
-        const { group , notInGroup , membersNotFound } = req.body;
-        const name = group.name; 
-        const members = group.members ;
+        const name =req.params.name; 
+        const members = req.body.members ;
+
+        let membersNotFound = [];
+        let NotInGroup = [] ; 
+
         //find the group with the same name that is unique
         const groupFind = await Group.findOne({ name : name });
         if (!groupFind) return res.status(401).json({ message: "Group not found" })
         //check if all the users are inside the users list
+        let group = groupFind;
         let count= 0; 
         for(let i = 0 ; i< members.length ; i++)
         { 
-          if(!User.findOne({ "email" : members[i]}))count++  //if the email doesn't exist
-          else if(!groupFind.members.includes(members[i]))count++
-          else 
-            continue
+          let user = await User.findOne({ "email" : members[i].email});
+          if(!user)
+            {
+              count++; 
+              membersNotFound.push(members[i]); 
+            }//if the email doesn't exist
+          else
+            {
+              let flag = 0; 
+              for(let m of group.members) 
+              {
+                if(m.email == members[i].email)
+                  {
+                    group.members = group.members.filter( (e) => e.email!=m.email);
+                    flag=1;
+                  }
+              }
+              if(!flag)
+              {
+                count++ ; 
+                NotInGroup.push(members[i]); 
+              }
+            }
+          
         }
-        if(count==members.length)return res.status(401).json({ message: "Users are not present in the Group user list" })
-        //we don't controll the user that will be deleted but only if the remaining users were in the list 
-        //even in the previous version
-        Group.replaceOne(groupFind, group);  //replace the older group with the new one 
-        //NOT SURE
+        if(count==members.length)return res.status(401).json({ message: "all the `memberEmails` either do not exist or are not in the group" })
+        let done = await Group.replaceOne({ "name" : name}, {
+          "name" : name,
+          "members" :   group.members
+            });  //replace the older group with the new one
+        res.status(200).json({
+          "group" : group ,
+          "NotInGroup" : NotInGroup, 
+          "MembersNotFound" : membersNotFound 
+        })
+
     } catch (err) {
         res.status(500).json(err.message)
     }
