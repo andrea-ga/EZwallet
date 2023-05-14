@@ -272,11 +272,46 @@ export const getAllTransactions = async (req, res) => {
  */
 export const getTransactionsByGroup = async (req, res) => {
     try {
+        const name = req.params.name;
 
+        const group = await Group.findOne({name : name});
 
+        if(!group)
+            return res.status(401).json({message : "Group not found"});
 
+        const groupT = [];
 
-        
+        const result = await transactions.aggregate([
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "type",
+                    foreignField: "type",
+                    as: "categories_info"
+                }
+            },
+            { $unwind: "$categories_info" }
+        ]);
+
+        let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
+
+        const emails = [];
+
+        for(const m of group.members)
+            emails.push(m.email);
+
+        async function check() {
+            for (const t of data) {
+                const user = await User.findOne({username: t.username});
+
+                if (user && emails.some(e => e === user.email))
+                    groupT.push(t);
+            }
+        }
+
+        await check();
+
+        res.status(200).json(groupT);
     } catch (error) {
         res.status(400).json({ error: error.message })
     }
