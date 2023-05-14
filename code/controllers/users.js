@@ -31,9 +31,9 @@ export const getUsers = async (req, res) => {
 export const getUser = async (req, res) => {
     try {
         const cookie = req.cookies
-        if (!cookie.accessToken || !cookie.refreshToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+        const currentUser= await User.findOne({refreshToken: cookie.refreshToken}); 
+        if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return res.status(400).json("Unauthorized");
+
         const username = req.params.username
         const user = await User.findOne({ refreshToken: cookie.refreshToken })
         if (!user) return res.status(401).json({ message: "User not found" })

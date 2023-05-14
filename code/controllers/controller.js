@@ -98,9 +98,9 @@ export const createCategory = (req, res) => {
 export const getCategories = async (req, res) => {
     try {
         const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+        const currentUser= await User.findOne({refreshToken: cookie.refreshToken}); 
+        if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return res.status(400).json("Unauthorized");
+
         let data = await categories.find({})
 
         let filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }))
@@ -121,9 +121,8 @@ export const getCategories = async (req, res) => {
 export const createTransaction = async (req, res) => {
     try {
         const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+        const currentUser= await User.findOne({ "username" : req.params.username }); 
+        if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return res.status(400).json("Unauthorized");
         const { username, amount, type } = req.body;
         const new_transactions = new transactions({ username, amount, type });
         new_transactions.save()
@@ -144,9 +143,7 @@ export const createTransaction = async (req, res) => {
 export const getAllTransactions = async (req, res) => {
     try {
         const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+        if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
         /**
          * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
          */
@@ -330,11 +327,8 @@ export const deleteTransactions = async (req, res) => {
     
             const cookies = req.cookies
             const ids = req.body.ids
-    
-            // need to add check if admin is present or not 
-            if (!cookies.accessToken ){
-                return res.status(401).json({message: "Unauthorized"})
-            }
+ 
+            if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
             for (const id of ids){
                 let data = await transactions.deleteOne({ _id: id });
             }

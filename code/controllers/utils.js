@@ -37,41 +37,46 @@ export const handleDateFilterParams = (req) => {
  */
 export const verifyAuth = (req, res, info) => {
     const cookie = req.cookies
-     
+
     if (!cookie.accessToken ||!cookie.refreshToken) {
         //res.status(401).json({ message: "Unauthorized" });
-        return false;
+        console.log("----------------0------------------------");
+
+        return true; //not sure
     }
     try {
+        
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
         const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
-        
-        const currentUser = 0;
-        //await User.findOne({refreshToken: cookie.refreshToken}); 
+        const currentUser = info.currentUser; 
+
         if (info.authType == "User") 
         {
-            if( decodedAccessToken.username != currentUser.username|| decodedRefreshToken.username != currentUser.username)
+            if( decodedAccessToken.username != currentUser.username || decodedRefreshToken.username != currentUser.username)
             {
-                res.status(401).json({ message: "Wrong username on cookies" });
+                //res.status(401).json({ message: "Wrong username on cookies" });
+                
                 return false;
             }
             else if( !decodedAccessToken && decodedRefreshToken.username != currentUser.username)
             { 
-                res.status(401).json({ message: "Wrong username on cookies 2" });
+
+                //res.status(401).json({ message: "Wrong username on cookies 2" });
+                
                 return false;
             }
-            else if( decodedAccessToken.username == currentUser.username && decodedRefreshToken == currentUser.username)
+            else if( decodedAccessToken.username == currentUser.username && decodedRefreshToken.username == currentUser.username)
             {
-                res.status(200).json({ message: "Success" })
+                //res.status(200).json({ message: "Success" })
+            
                 return true ;
             }
             else if( !decodedAccessToken && decodedRefreshToken == currentUser.username)
-            { 
-                res.status(401).json({ message: "Success with AccessToken expired" });
+            {
+                //res.status(401).json({ message: "Success with AccessToken expired" });
+               
                 return true;
             }
-    
-
         }
         
         else if (info.authType == "Admin")
@@ -130,7 +135,7 @@ export const verifyAuth = (req, res, info) => {
                 return true;
             }
         }      
-        
+        console.log("-----------cazzo------------");
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
             res.status(401).json({ message: "Token is missing information" })
             return false
