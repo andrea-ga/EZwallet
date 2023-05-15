@@ -17,7 +17,7 @@ export const getUsers = async (req, res) => {
     if (!verifyAuth(req, res, { authType: "Admin" })) return;
         const user = await User.find();
         let users = user.map( e =>  ({ "username" : e.username ,"email" :  e.email , "role" : e.role}) ) ; 
-        res.status(200).json(users);
+        res.status(200).json({data : users});
     } catch (error) {
         res.status(500).json(error.message);
     }
@@ -44,12 +44,11 @@ export const getUser = async (req, res) => {
         }
         else if(accessRequest.role=="Regular") //if the user is a normal user
         {
-          
         currentUser= await User.findOne({username : username}); 
         if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return;
         }
         let find = { "username" : currentUser.username ,"email" :  currentUser.email , "role" : currentUser.role}
-        res.status(200).json(find)
+        res.status(200).json({data : find })
     } catch (error) {
         res.status(500).json(error.message)
     }
@@ -114,11 +113,11 @@ export const createGroup = async (req, res) => {
       {
         const group = new Group({name, members});
       group.save()
-      .then( () => res.json(   {
+      .then( () => res.json({data : {
         group , 
         "alreadyInGroup" : emailAlready_inGroup, 
         "membersNotFound" : emailnot_founded 
-      }))
+      }}))
       .catch(err => { throw err })
       }
     } catch (err) {
@@ -142,7 +141,7 @@ export const getGroups = async (req, res) => {
         
         const group = await Group.find();
         let groups = group.map (e => ( {"name"  :  e.name, "members" : e.members} ) );
-        res.status(200).json(groups);
+        res.status(200).json({data : groups});
     } catch (err) {
         res.status(500).json(err.message)
     }
@@ -250,19 +249,31 @@ export const addToGroup = async (req, res) => {
  */
 export const removeFromGroup = async (req, res) => {
     try {
-      
-      const cookie = req.cookies;
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+     
+        const cookie = req.cookies
+        let groupFind ;
+        let accessRequest = await User.findOne({refreshToken : cookie.refreshToken });
         const name =req.params.name; 
         const members = req.body.members ;
+      if(accessRequest.role=="Admin" ) // regexp for the URL 
+      {
+        groupFind  = await Group.findOne({name : name});
+        if (!verifyAuth(req, res, { authType: "Admin" })) return;
+      }
+      else if (accessRequest.role=="Regular") //regexp for the URL
+      {
+        groupFind  = await Group.findOne({name : name});
+        if ( !verifyAuth(req, res, { authType: "Group" , group : groupFind}) ) return;
+      }
 
-        let membersNotFound = [];
-        let NotInGroup = [] ; 
+      let membersNotFound = [];
+      let NotInGroup = [] ; 
+
+
+        
 
         //find the group with the same name that is unique
-        const groupFind = await Group.findOne({ name : name });
+
         if (!groupFind) return res.status(401).json({ message: "Group not found" })
         //check if all the users are inside the users list
         let group = groupFind;
@@ -299,11 +310,11 @@ export const removeFromGroup = async (req, res) => {
           "name" : name,
           "members" :   group.members
             });  //replace the older group with the new one
-        res.status(200).json({
+        res.status(200).json({data : {
           "group" : group ,
           "NotInGroup" : NotInGroup, 
           "MembersNotFound" : membersNotFound 
-        })
+        }})
 
     } catch (err) {
         res.status(500).json(err.message)
@@ -338,13 +349,13 @@ export const deleteUser = async (req, res) => {
  */
 export const deleteGroup = async (req, res) => {   //still to implement Admin and not user
     try {
-    if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
+    if (!verifyAuth(req, res, { authType: "Admin" })) return;
     const  name  = req.body.name;
     //find the group with the same name that is unique
     const groupFind = await Group.findOne({ name : name });
     //console.log(name);  //DEBUG
     if (!groupFind) return res.status(401).json({ message: "Group not found" })
-    Group.deleteOne({name : name}).then(gr => res.status(200).json("correctly deleted"))
+    Group.deleteOne({name : name}).then(gr => res.status(200).json({message : "Success"}))
     .catch(err => { throw err }) 
     } catch (err) {
         res.status(500).json(err.message)

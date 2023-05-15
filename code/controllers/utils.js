@@ -37,7 +37,6 @@ export const handleDateFilterParams = (req) => {
  */
 export const verifyAuth = (req, res, info) => {
     const cookie = req.cookies
-
     if (!cookie.accessToken ||!cookie.refreshToken) {
         res.status(401).json({ message: "Unauthorized" });
         return false; 
@@ -45,11 +44,9 @@ export const verifyAuth = (req, res, info) => {
     try {
         
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
-        const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
-        const currentUser = info.currentUser; 
-
+        const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);     
         if (info.authType == "User") 
-        {   
+        {   const currentUser = info.currentUser;
             if(!currentUser) //case of user request not found
             {
                 res.status(401).json({ message: "Wrong username on cookies" });
@@ -106,28 +103,35 @@ export const verifyAuth = (req, res, info) => {
         }
         else if (info.authType == "Group")  
         {   
-            
-            let ATfind = info.group.members.filter((e)=> e.email == decodedAccessToken.username );
-            let RTfind = info.group.members.filter((e)=> e.email == decodedRefreshToken.username );
+            if(!info.group)
+            {
+                res.status(401).json({ message: "Error" });
+                return false; 
+            }
+            console.log(info.group);
+            console.log(info.group.members);
 
-            if( ATfind.length==0 || RTfind.length==0  ) //to implement if it is not in the group
+            let ATfind = info.group.members.map((e)=> e.email).find( e => e == decodedAccessToken.email );
+            
+            let RTfind = info.group.members.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
+            if( !ATfind || !RTfind  ) 
             {
-                res.status(401).json({ message: "Wrong role" });
+                res.status(401).json({ message: "Access not authorized" });
                 return false; 
             }
-             else if( !decodedAccessToken && RTfind.length==0 )
+             else if( !decodedAccessToken && !RTfind )
             { 
-                res.status(401).json({ message: "Wrong role 2" });
+                res.status(401).json({ message: "Access not authorized 2" });
                 return false; 
             }
-            else if( ATfind.length!=0  && RTfind.length!=0 )
+            else if( ATfind  && RTfind )
             {
-                res.status(200).json({ message: "Success" });
+                //res.status(200).json({ message: "Success" });
                 return true;
             }
-            else if( !decodedAccessToken && RTfind.length!=0)
+            else if( !decodedAccessToken && RTfind)
             {
-                res.status(200).json({ message: "Success 2" });
+                //res.status(200).json({ message: "Success 2" });
                 return true;
             }
         }      
