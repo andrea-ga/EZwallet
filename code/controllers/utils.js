@@ -49,30 +49,33 @@ export const verifyAuth = (req, res, info) => {
         const currentUser = info.currentUser; 
 
         if (info.authType == "User") 
-        {
+        {   
+            if(!currentUser) //case of user request not found
+            {
+                res.status(401).json({ message: "Wrong username on cookies" });
+                
+                return false;
+            }
             if( decodedAccessToken.username != currentUser.username || decodedRefreshToken.username != currentUser.username)
             {
-                //res.status(401).json({ message: "Wrong username on cookies" });
+                res.status(401).json({ message: "Wrong username on cookies" });
                 
                 return false;
             }
             else if( !decodedAccessToken && decodedRefreshToken.username != currentUser.username)
             { 
 
-                //res.status(401).json({ message: "Wrong username on cookies 2" });
-                
+                res.status(401).json({ message: "Wrong username on cookies 2" });
                 return false;
             }
             else if( decodedAccessToken.username == currentUser.username && decodedRefreshToken.username == currentUser.username)
             {
                 //res.status(200).json({ message: "Success" })
-            
                 return true ;
             }
             else if( !decodedAccessToken && decodedRefreshToken == currentUser.username)
             {
                 //res.status(401).json({ message: "Success with AccessToken expired" });
-               
                 return true;
             }
         }

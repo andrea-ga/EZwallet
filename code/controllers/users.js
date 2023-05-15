@@ -11,7 +11,6 @@ import { timingSafeEqual } from "crypto";
   - Optional behavior:
     - empty array is returned if there are no users
  */
-//---------------DONE---------------------------------
 export const getUsers = async (req, res) => {
     try {
     //verify if the user send the request is an admin or not 
@@ -31,24 +30,26 @@ export const getUsers = async (req, res) => {
   - Optional behavior:
     - error 401 is returned if the user is not found in the system
  */
-//---------------DONE---------------------------------
 export const getUser = async (req, res) => {
     try {
         const cookie = req.cookies
         const username = req.params.username
-        
-        if(cookie.role=="Admin") //the admin call this method
+        let currentUser ;
+        let accessRequest = await User.findOne({refreshToken : cookie.refreshToken })
+        if(accessRequest.role=="Admin") //the admin call this method
         {
-          const currentUser= await User.findOne({username : username});
-          if (!user) return res.status(401).json({ message: "User not found" });
+          currentUser= await User.findOne({username : username});
+          if (!currentUser) return res.status(401).json({ message: "User not found" });
           if (!verifyAuth(req, res, { authType: "Admin" })) return;
         }
-        else  //if the user is a normal user
+        else if(accessRequest.role=="Regular") //if the user is a normal user
         {
-        const currentUser= await User.findOne({username : username}); 
+          
+        currentUser= await User.findOne({username : username}); 
         if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return;
         }
-        res.status(200).json(user)
+        let find = { "username" : currentUser.username ,"email" :  currentUser.email , "role" : currentUser.role}
+        res.status(200).json(find)
     } catch (error) {
         res.status(500).json(error.message)
     }
@@ -318,9 +319,10 @@ export const removeFromGroup = async (req, res) => {
   - Optional behavior:
     - error 401 is returned if the user does not exist 
  */
+
 export const deleteUser = async (req, res) => {
     try {
-    if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
+    if (!verifyAuth(req, res, { authType: "Admin" })) return;
 
     } catch (err) {
         res.status(500).json(err.message)
