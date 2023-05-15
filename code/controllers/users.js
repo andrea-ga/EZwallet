@@ -69,10 +69,9 @@ export const getUser = async (req, res) => {
 export const createGroup = async (req, res) => {
     try {
       const cookie = req.cookies;
+      let currentUser = await User.findOne({refreshToken : cookie.refreshToken });
+    if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return;
 
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
 
       const { name , memberEmails } = req.body;
       const groupFind = await Group.findOne({ name : name });
@@ -141,7 +140,8 @@ export const getGroups = async (req, res) => {
 
         if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
         
-        const groups = await Group.find();
+        const group = await Group.find();
+        let groups = group.map (e => ( {"name"  :  e.name, "members" : e.members} ) );
         res.status(200).json(groups);
     } catch (err) {
         res.status(500).json(err.message)
