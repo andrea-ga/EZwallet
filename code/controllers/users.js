@@ -2,6 +2,7 @@ import { group } from "console";
 import { Group, User } from "../models/User.js";
 import { transactions } from "../models/model.js";
 import { verifyAuth } from "./utils.js";
+import { timingSafeEqual } from "crypto";
 
 /**
  * Return all the users
@@ -10,11 +11,13 @@ import { verifyAuth } from "./utils.js";
   - Optional behavior:
     - empty array is returned if there are no users
  */
+//---------------DONE---------------------------------
 export const getUsers = async (req, res) => {
     try {
     //verify if the user send the request is an admin or not 
-    if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
-        const users = await User.find();
+    if (!verifyAuth(req, res, { authType: "Admin" })) return;
+        const user = await User.find();
+        let users = user.map( e =>  ({ "username" : e.username ,"email" :  e.email , "role" : e.role}) ) ; 
         res.status(200).json(users);
     } catch (error) {
         res.status(500).json(error.message);
@@ -28,16 +31,23 @@ export const getUsers = async (req, res) => {
   - Optional behavior:
     - error 401 is returned if the user is not found in the system
  */
+//---------------DONE---------------------------------
 export const getUser = async (req, res) => {
     try {
         const cookie = req.cookies
-        const currentUser= await User.findOne({refreshToken: cookie.refreshToken}); 
-        if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return res.status(400).json("Unauthorized");
-
         const username = req.params.username
-        const user = await User.findOne({ refreshToken: cookie.refreshToken })
-        if (!user) return res.status(401).json({ message: "User not found" })
-        if (user.username !== username) return res.status(401).json({ message: "Unauthorized" })
+        
+        if(cookie.role=="Admin") //the admin call this method
+        {
+          const currentUser= await User.findOne({username : username});
+          if (!user) return res.status(401).json({ message: "User not found" });
+          if (!verifyAuth(req, res, { authType: "Admin" })) return;
+        }
+        else  //if the user is a normal user
+        {
+        const currentUser= await User.findOne({username : username}); 
+        if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return;
+        }
         res.status(200).json(user)
     } catch (error) {
         res.status(500).json(error.message)

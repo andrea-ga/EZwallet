@@ -39,10 +39,8 @@ export const verifyAuth = (req, res, info) => {
     const cookie = req.cookies
 
     if (!cookie.accessToken ||!cookie.refreshToken) {
-        //res.status(401).json({ message: "Unauthorized" });
-        console.log("----------------0------------------------");
-
-        return true; //not sure
+        res.status(401).json({ message: "Unauthorized" });
+        return false; 
     }
     try {
         
@@ -80,15 +78,15 @@ export const verifyAuth = (req, res, info) => {
         }
         
         else if (info.authType == "Admin")
-        {
+        {   
             if( decodedAccessToken.role != "Admin" || decodedRefreshToken.role != "Admin")
             {
-                //res.status(401).json({ message: "Wrong role" });
+                res.status(401).json({ message: "Wrong role" });
                 return false; 
             }
              else if( !decodedAccessToken && decodedRefreshToken.role != "Admin")
             { 
-                //res.status(401).json({ message: "Wrong role 2" });
+                res.status(401).json({ message: "Wrong role 2" });
                 return false; 
             }
             else if( decodedAccessToken.role == "Admin" && decodedRefreshToken.role == "Admin")
@@ -103,39 +101,33 @@ export const verifyAuth = (req, res, info) => {
             }
 
         }
-
-
-    /*          - authType === "Group":
- *              - either the accessToken or the refreshToken have a `email` which is not in the requested group => error 401
- *              - the accessToken is expired and the refreshToken has a `email` which is not in the requested group => error 401
- *              - both the accessToken and the refreshToken have a `email` which is in the requested group => success
- *              - the accessToken is expired and the refreshToken has a `email` which is in the requested group => success */
         else if (info.authType == "Group")  
         {   
             
-            
-            if( decodedAccessToken.email || decodedRefreshToken.email ) //to implement if it is not in the group
+            let ATfind = info.group.members.filter((e)=> e.email == decodedAccessToken.username );
+            let RTfind = info.group.members.filter((e)=> e.email == decodedRefreshToken.username );
+
+            if( ATfind.length==0 || RTfind.length==0  ) //to implement if it is not in the group
             {
                 res.status(401).json({ message: "Wrong role" });
                 return false; 
             }
-             else if( !decodedAccessToken && decodedRefreshToken.email)
+             else if( !decodedAccessToken && RTfind.length==0 )
             { 
                 res.status(401).json({ message: "Wrong role 2" });
                 return false; 
             }
-            else if( decodedAccessToken.email && decodedRefreshToken.email)
+            else if( ATfind.length!=0  && RTfind.length!=0 )
             {
                 res.status(200).json({ message: "Success" });
                 return true;
             }
-            else if( !decodedAccessToken && decodedRefreshToken.email)
+            else if( !decodedAccessToken && RTfind.length!=0)
             {
                 res.status(200).json({ message: "Success 2" });
                 return true;
             }
         }      
-        console.log("-----------cazzo------------");
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
             res.status(401).json({ message: "Token is missing information" })
             return false

@@ -1,7 +1,7 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "",
+  "description": "## Running the code locally",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -23,6 +23,7 @@
     "js-cookie": "^3.0.1",
     "jsonwebtoken": "^8.5.1",
     "mongo": "^0.1.0",
+    "mongodb": "^5.5.0",
     "mongoose": "^6.11.1",
     "node": "^20.1.0",
     "npx": "^10.2.2"
@@ -38,5 +39,8 @@
   },
   "jest": {
     "testTimeout": 30000
+  },
+  "directories": {
+    "test": "test"
   }
 }
