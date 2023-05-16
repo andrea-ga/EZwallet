@@ -9,11 +9,11 @@ import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./
  */
 export const createCategory = (req, res) => {
     try {
-       if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
+       if (!verifyAuth(req, res, { authType: "Admin" })) return ;
         const { type, color } = req.body;
         const new_categories = new categories({ type, color });
         new_categories.save()
-            .then(data => res.json(data))
+            .then(data => res.json({data : data}))
             .catch(err => { throw err })
     } catch (error) {
         res.status(400).json({ error: error.message })
@@ -44,7 +44,7 @@ export const createCategory = (req, res) => {
       
       export const updateCategory = async (req, res) => {
         try {
-          if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
+          if (!verifyAuth(req, res, { authType: "Admin" })) return ;
           // Call the updateCategory function with the provided parameters
           updateCategoryFunc(req.params.categoryName, req.body.newCategoryName);
           res.status(200).json({ message: "Category updated successfully" });
@@ -78,7 +78,7 @@ export const createCategory = (req, res) => {
       
       export const deleteCategory = async (req, res) => {
         try {
-          if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
+          if (!verifyAuth(req, res, { authType: "Admin" })) return;
           // Call the deleteCategory function with the provided parameter
           deleteCategoryFunc(req.params.categoryName);
           res.status(200).json({ message: "Category deleted successfully" });
@@ -325,14 +325,13 @@ export const deleteTransaction = async (req, res) => {
 export const deleteTransactions = async (req, res) => {
         try {
     
+            if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
             const cookies = req.cookies
             const ids = req.body.ids
- 
-            if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
             for (const id of ids){
                 let data = await transactions.deleteOne({ _id: id });
             }
-            return res.json("All the transaction deleted");
+            return res.json({message: "All the transaction deleted"});
         } catch (error) {
             res.status(400).json({ error: error.message })
         }

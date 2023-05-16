@@ -84,21 +84,11 @@ export const verifyAuth = (req, res, info) => {
                 res.status(401).json({ message: "Wrong role" });
                 return false; 
             }
-             else if( !decodedAccessToken && decodedRefreshToken.role != "Admin")
-            { 
-                res.status(401).json({ message: "Wrong role 2" });
-                return false; 
-            }
             else if( decodedAccessToken.role == "Admin" && decodedRefreshToken.role == "Admin")
             {
                 //res.status(200).json({ message: "Success" });
                 return true;
-            }
-            else if( !decodedAccessToken && decodedRefreshToken.role == "Admin")
-            {
-                //res.status(200).json({ message: "Success 2" });
-                return true;
-            }
+            }   
 
         }
         else if (info.authType == "Group")  
@@ -108,30 +98,16 @@ export const verifyAuth = (req, res, info) => {
                 res.status(401).json({ message: "Error" });
                 return false; 
             }
-            console.log(info.group);
-            console.log(info.group.members);
-
             let ATfind = info.group.members.map((e)=> e.email).find( e => e == decodedAccessToken.email );
-            
             let RTfind = info.group.members.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
             if( !ATfind || !RTfind  ) 
             {
                 res.status(401).json({ message: "Access not authorized" });
                 return false; 
             }
-             else if( !decodedAccessToken && !RTfind )
-            { 
-                res.status(401).json({ message: "Access not authorized 2" });
-                return false; 
-            }
             else if( ATfind  && RTfind )
             {
                 //res.status(200).json({ message: "Success" });
-                return true;
-            }
-            else if( !decodedAccessToken && RTfind)
-            {
-                //res.status(200).json({ message: "Success 2" });
                 return true;
             }
         }      
@@ -158,6 +134,63 @@ export const verifyAuth = (req, res, info) => {
                     id: refreshToken.id,
                     role: refreshToken.role
                 }, process.env.ACCESS_KEY, { expiresIn: '1h' })
+
+                
+                if (info.authType == "User")     //case of access token expired
+                    {   const currentUser = info.currentUser;
+                        if(!currentUser) //case of user request not found
+                        {
+                            res.status(401).json({ message: "Wrong username on cookies" });
+                            
+                            return false;
+                        }
+                        if( decodedRefreshToken.username != currentUser.username)
+                        { 
+            
+                            res.status(401).json({ message: "Wrong username on cookies 2" });
+                            return false;
+                        }
+                        else if(decodedRefreshToken == currentUser.username)
+                        {
+                            //res.status(401).json({ message: "Success with AccessToken expired" });
+                            return true;
+                        }
+                    }
+                else if (info.authType == "Admin")
+                    { 
+                        if(  decodedRefreshToken.role != "Admin")
+                                    { 
+                                        res.status(401).json({ message: "Wrong role 2" });
+                                        return false; 
+                                    }
+                        else if( decodedRefreshToken.role == "Admin")
+                                    {
+                                        //res.status(200).json({ message: "Success 2" });
+                                        return true;
+                                    }
+                    }
+                else if (info.authType == "Group")  
+                    {   
+                            if(!info.group)
+                            {
+                                res.status(401).json({ message: "Error" });
+                                return false; 
+                            }
+                            let RTfind = info.group.members.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
+                            if(  !RTfind )
+                            { 
+                                res.status(401).json({ message: "Access not authorized 2" });
+                                return false; 
+                            }
+                            else if( RTfind)
+                            {
+                                //res.status(200).json({ message: "Success 2" });
+                                return true;
+                            }
+                    }
+
+
+
                 res.cookie('accessToken', newAccessToken, { httpOnly: true, path: '/api', maxAge: 60 * 60 * 1000, sameSite: 'none', secure: true })
                 res.locals.message = 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
                 return true

@@ -137,7 +137,7 @@ export const getGroups = async (req, res) => {
     try {
         const cookie = req.cookies;
 
-        if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
+        if (!verifyAuth(req, res, { authType: "Admin" })) return ;
         
         const group = await Group.find();
         let groups = group.map (e => ( {"name"  :  e.name, "members" : e.members} ) );
@@ -157,14 +157,27 @@ export const getGroups = async (req, res) => {
  */
 export const getGroup = async (req, res) => {
     try {
-        const cookie = req.cookies;
+      const cookie = req.cookie ;
+      
+      const user = await User.find({refreshToken : cookie.refreshToken}); 
+      const groupName = req.params.name;
+      const group = await Group.findOne({name : groupName});
+      if(user.role=="Regular")
+      {
+      if(!verifyAuth(req, res, { authType: "Group", group : group })) return ;
+      }
+      else if (user.role == "Admin") 
+      {
+        if(!group)res.status(401).json({ message: "Group not found" });
+        if(!verifyAuth(req, res, { authType: "Admin" })) return ;
+      }
+      else 
+      {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
 
-        if(!cookie.accessToken || !cookie.refreshToken) {
-            return res.status(401).json({message: "Unauthorized"});
-        }
-
-        const groupName = req.params.name;
-        const group = await Group.findOne({name : groupName});
+     
+      
 
         if(!group)
             return res.status(401).json({message: "Group not found"});
@@ -189,9 +202,23 @@ export const getGroup = async (req, res) => {
 export const addToGroup = async (req, res) => {
     try {
         const cookie = req.cookies;
-
-        if(!cookie.accessToken || !cookie.refreshToken) {
-            return res.status(401).json({message: "Unauthorized"});
+        const reAd = new RegExp("*/api/groups/*/pull");
+        const reUs = new RegExp("*/api/groups/*/remove");
+        const name = req.params.name;
+        if(accessRequest.role=="Admin" && reAd.test(req.url)) // regexp for the URL 
+        {
+          groupFind  = await Group.findOne({name : name});
+          if(!groupFind) res.status(401).json({message: "Group not found"});
+          if (!verifyAuth(req, res, { authType: "Admin" }) && reUs.test(req.url)) return;
+        }
+        else if (accessRequest.role=="Regular" && reUs.test(req.url)) //regexp for the URL
+        {
+          groupFind  = await Group.findOne({name : name});
+          if ( !verifyAuth(req, res, { authType: "Group" , group : groupFind}) ) return;
+        }
+        else 
+        {
+          return res.status(401).json({ message: "Unauthorized" });
         }
 
         const membersNotFound = [];
@@ -231,7 +258,7 @@ export const addToGroup = async (req, res) => {
             membersNotFound: membersNotFound
         }
 
-        res.status(200).json(finalGroup);
+        res.status(200).json({data : finalGroup});
     } catch (err) {
         res.status(500).json(err.message)
     }
@@ -249,29 +276,31 @@ export const addToGroup = async (req, res) => {
  */
 export const removeFromGroup = async (req, res) => {
     try {
-     
+        const reAd = new RegExp("*/api/groups/*/pull");
+        const reUs = new RegExp("*/api/groups/*/remove");
         const cookie = req.cookies
         let groupFind ;
         let accessRequest = await User.findOne({refreshToken : cookie.refreshToken });
         const name =req.params.name; 
         const members = req.body.members ;
-      if(accessRequest.role=="Admin" ) // regexp for the URL 
+      if(accessRequest.role=="Admin" && reAd.test(req.url)) // regexp for the URL 
       {
         groupFind  = await Group.findOne({name : name});
-        if (!verifyAuth(req, res, { authType: "Admin" })) return;
+        if (!verifyAuth(req, res, { authType: "Admin" }) && reUs.test(req.url)) return;
       }
-      else if (accessRequest.role=="Regular") //regexp for the URL
+      else if (accessRequest.role=="Regular" && reUs.test(req.url)) //regexp for the URL
       {
         groupFind  = await Group.findOne({name : name});
         if ( !verifyAuth(req, res, { authType: "Group" , group : groupFind}) ) return;
       }
+      else 
+      {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
 
       let membersNotFound = [];
       let NotInGroup = [] ; 
-
-
-        
-
         //find the group with the same name that is unique
 
         if (!groupFind) return res.status(401).json({ message: "Group not found" })
