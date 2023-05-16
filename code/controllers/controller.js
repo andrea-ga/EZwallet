@@ -126,7 +126,7 @@ export const createTransaction = async (req, res) => {
         const { username, amount, type } = req.body;
         const new_transactions = new transactions({ username, amount, type });
         new_transactions.save()
-            .then(data => res.json(data))
+            .then(data => res.json({data :data}))
             .catch(err => { throw err })
     } catch (error) {
         res.status(400).json({ error: error.message })

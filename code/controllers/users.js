@@ -202,8 +202,8 @@ export const getGroup = async (req, res) => {
 export const addToGroup = async (req, res) => {
     try {
         const cookie = req.cookies;
-        const reAd = new RegExp("*/api/groups/*/pull");
-        const reUs = new RegExp("*/api/groups/*/remove");
+        const reAd = new RegExp("*/api/groups/*/insert");
+        const reUs = new RegExp("*/api/groups/*/add");
         const name = req.params.name;
         if(accessRequest.role=="Admin" && reAd.test(req.url)) // regexp for the URL 
         {
