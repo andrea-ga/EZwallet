@@ -311,7 +311,7 @@ export const getTransactionsByGroup = async (req, res) => {
 
         await check();
 
-        res.status(200).json(groupT);
+        res.status(200).json({data : groupT});
     } catch (error) {
         res.status(400).json({ error: error.message })
     }
@@ -371,7 +371,7 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
 
         await check();
 
-        res.status(200).json(groupT);
+        res.status(200).json({data : groupT});
     } catch (error) {
         res.status(400).json({ error: error.message })
     }
