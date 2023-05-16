@@ -135,7 +135,6 @@ export const verifyAuth = (req, res, info) => {
                     role: refreshToken.role
                 }, process.env.ACCESS_KEY, { expiresIn: '1h' })
 
-                
                 if (info.authType == "User")     //case of access token expired
                     {   const currentUser = info.currentUser;
                         if(!currentUser) //case of user request not found
@@ -144,13 +143,13 @@ export const verifyAuth = (req, res, info) => {
                             
                             return false;
                         }
-                        if( decodedRefreshToken.username != currentUser.username)
+                        if( refreshToken.username != currentUser.username)
                         { 
             
                             res.status(401).json({ message: "Wrong username on cookies 2" });
                             return false;
                         }
-                        else if(decodedRefreshToken == currentUser.username)
+                        else if(refreshToken.username == currentUser.username)
                         {
                             //res.status(401).json({ message: "Success with AccessToken expired" });
                             return true;
@@ -158,12 +157,12 @@ export const verifyAuth = (req, res, info) => {
                     }
                 else if (info.authType == "Admin")
                     { 
-                        if(  decodedRefreshToken.role != "Admin")
+                        if(  refreshToken.role != "Admin")
                                     { 
                                         res.status(401).json({ message: "Wrong role 2" });
                                         return false; 
                                     }
-                        else if( decodedRefreshToken.role == "Admin")
+                        else if( refreshToken.role == "Admin")
                                     {
                                         //res.status(200).json({ message: "Success 2" });
                                         return true;
@@ -176,7 +175,7 @@ export const verifyAuth = (req, res, info) => {
                                 res.status(401).json({ message: "Error" });
                                 return false; 
                             }
-                            let RTfind = info.group.members.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
+                            let RTfind = info.group.members.map((e)=> e.email).find( e => e == refreshToken.email );
                             if(  !RTfind )
                             { 
                                 res.status(401).json({ message: "Access not authorized 2" });
