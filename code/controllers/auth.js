@@ -22,7 +22,8 @@ export const register = async (req, res) => {
             email,
             password: hashedPassword,
         });
-        res.status(200).json({message : 'user added succesfully'});
+        res.status(200).json({data  : {message : 'user added succesfully'} ,
+                message : res.locals.message});
     } catch (err) {
         res.status(400).json(err);
     }

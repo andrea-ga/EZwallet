@@ -15,8 +15,9 @@ export const getUsers = async (req, res) => {
     try {
     //verify if the user send the request is an admin or not 
     if (!verifyAuth(req, res, { authType: "Admin" })) return;
-        const user = await User.find();
-        let users = user.map( e =>  ({ "username" : e.username ,"email" :  e.email , "role" : e.role}) ) ; 
+        let user = await User.find();
+        let users = [];
+        if (user) users=user.map( e =>  ({ "username" : e.username ,"email" :  e.email , "role" : e.role}) ) ; 
         res.status(200).json({data : users});
     } catch (error) {
         res.status(500).json(error.message);
@@ -35,7 +36,8 @@ export const getUser = async (req, res) => {
         const cookie = req.cookies
         const username = req.params.username
         let currentUser ;
-        let accessRequest = await User.findOne({refreshToken : cookie.refreshToken })
+        let accessRequest = await User.findOne({refreshToken : cookie.refreshToken });
+
         if(accessRequest.role=="Admin") //the admin call this method
         {
           currentUser= await User.findOne({username : username});
@@ -47,6 +49,9 @@ export const getUser = async (req, res) => {
         currentUser= await User.findOne({username : username}); 
         if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return;
         }
+
+
+        
         let find = { "username" : currentUser.username ,"email" :  currentUser.email , "role" : currentUser.role}
         res.status(200).json({data : find })
     } catch (error) {

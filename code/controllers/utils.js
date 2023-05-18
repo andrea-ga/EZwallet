@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken'
  * @throws an error if the query parameters include `date` together with at least one of `from` or `upTo`
  */
 export const handleDateFilterParams = (req) => {
+
 }
 
 /**
@@ -37,93 +38,60 @@ export const handleDateFilterParams = (req) => {
  */
 export const verifyAuth = (req, res, info) => {
     const cookie = req.cookies
-    if (!cookie.accessToken ||!cookie.refreshToken) {
-        res.status(401).json({ message: "Unauthorized" });
-        return false; 
+    if (!cookie.accessToken || !cookie.refreshToken) {
+        return { authorized: false, cause: "Unauthorized" };
     }
     try {
-        
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
-        const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);     
+        const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
+        
         if (info.authType == "User") 
-        {   const currentUser = info.currentUser;
-            if(!currentUser) //case of user request not found
-            {
-                res.status(401).json({ message: "Wrong username on cookies" });
-                
-                return false;
+        {   
+            const  username = info.username;
+            if( decodedAccessToken.username != username || decodedRefreshToken.username !=username)
+            {                
+                return { authorized: false, cause: "Unauthorized" };
             }
-            if( decodedAccessToken.username != currentUser.username || decodedRefreshToken.username != currentUser.username)
+            else if( decodedAccessToken.username == username && decodedRefreshToken.username == username)
             {
-                res.status(401).json({ message: "Wrong username on cookies" });
-                
-                return false;
-            }
-            else if( !decodedAccessToken && decodedRefreshToken.username != currentUser.username)
-            { 
-
-                res.status(401).json({ message: "Wrong username on cookies 2" });
-                return false;
-            }
-            else if( decodedAccessToken.username == currentUser.username && decodedRefreshToken.username == currentUser.username)
-            {
-                //res.status(200).json({ message: "Success" })
-                return true ;
-            }
-            else if( !decodedAccessToken && decodedRefreshToken == currentUser.username)
-            {
-                //res.status(401).json({ message: "Success with AccessToken expired" });
-                return true;
+                return { authorized: true, cause: "Authorized" };
             }
         }
-        
         else if (info.authType == "Admin")
         {   
             if( decodedAccessToken.role != "Admin" || decodedRefreshToken.role != "Admin")
             {
-                res.status(401).json({ message: "Wrong role" });
-                return false; 
+                return { authorized: false, cause: "Unauthorized" };
             }
             else if( decodedAccessToken.role == "Admin" && decodedRefreshToken.role == "Admin")
             {
-                //res.status(200).json({ message: "Success" });
-                return true;
+                return { authorized: true, cause: "Authorized" };
             }   
-
         }
         else if (info.authType == "Group")  
         {   
-            if(!info.group)
-            {
-                res.status(401).json({ message: "Error" });
-                return false; 
-            }
-            let ATfind = info.group.members.map((e)=> e.email).find( e => e == decodedAccessToken.email );
-            let RTfind = info.group.members.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
+            let ATfind = info.emails.map((e)=> e.email).find( e => e == decodedAccessToken.email );
+            let RTfind = info.emails.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
             if( !ATfind || !RTfind  ) 
             {
-                res.status(401).json({ message: "Access not authorized" });
-                return false; 
+                return { authorized: false, cause: "Unauthorized" }; 
             }
             else if( ATfind  && RTfind )
             {
-                //res.status(200).json({ message: "Success" });
-                return true;
+                return { authorized: true, cause: "Authorized" };
             }
-        }      
+        }
+             
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
-            res.status(401).json({ message: "Token is missing information" })
-            return false
+            return { authorized: false, cause: "Token is missing information" }
         }
         if (!decodedRefreshToken.username || !decodedRefreshToken.email || !decodedRefreshToken.role) {
-            res.status(401).json({ message: "Token is missing information" })
-            return false
+            return { authorized: false, cause: "Token is missing information" }
         }
         if (decodedAccessToken.username !== decodedRefreshToken.username || decodedAccessToken.email !== decodedRefreshToken.email || decodedAccessToken.role !== decodedRefreshToken.role) {
-            res.status(401).json({ message: "Mismatched users" });
-            return false;
+            return { authorized: false, cause: "Mismatched users" };
         }
-        return true
+        return { authorized: true, cause: "Authorized" }
     } catch (err) {
         if (err.name === "TokenExpiredError") {
             try {
@@ -134,80 +102,58 @@ export const verifyAuth = (req, res, info) => {
                     id: refreshToken.id,
                     role: refreshToken.role
                 }, process.env.ACCESS_KEY, { expiresIn: '1h' })
-
+                res.cookie('accessToken', newAccessToken, { httpOnly: true, path: '/api', maxAge: 60 * 60 * 1000, sameSite: 'none', secure: true })
+                res.locals.refreshedTokenMessage= 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
+                
                 if (info.authType == "User")     //case of access token expired
-                    {   const currentUser = info.currentUser;
-                        if(!currentUser) //case of user request not found
-                        {
-                            res.status(401).json({ message: "Wrong username on cookies" });
-                            
-                            return false;
-                        }
+                {   
+                        const username = info.username;
                         if( refreshToken.username != currentUser.username)
                         { 
-            
-                            res.status(401).json({ message: "Wrong username on cookies 2" });
-                            return false;
+                            return { authorized: false, cause: "Unauthorized" };      
                         }
                         else if(refreshToken.username == currentUser.username)
                         {
-                            //res.status(401).json({ message: "Success with AccessToken expired" });
-                            return true;
+                        return { authorized: true, cause: "Authorized" };
                         }
-                    }
-                else if (info.authType == "Admin")
-                    { 
-                        if(  refreshToken.role != "Admin")
-                                    { 
-                                        res.status(401).json({ message: "Wrong role 2" });
-                                        return false; 
-                                    }
-                        else if( refreshToken.role == "Admin")
-                                    {
-                                        //res.status(200).json({ message: "Success 2" });
-                                        return true;
-                                    }
-                    }
-                else if (info.authType == "Group")  
-                    {   
-                            if(!info.group)
-                            {
-                                res.status(401).json({ message: "Error" });
-                                return false; 
-                            }
-                            let RTfind = info.group.members.map((e)=> e.email).find( e => e == refreshToken.email );
-                            if(  !RTfind )
-                            { 
-                                res.status(401).json({ message: "Access not authorized 2" });
-                                return false; 
-                            }
-                            else if( RTfind)
-                            {
-                                //res.status(200).json({ message: "Success 2" });
-                                return true;
-                            }
-                    }
-
-
-
-                res.cookie('accessToken', newAccessToken, { httpOnly: true, path: '/api', maxAge: 60 * 60 * 1000, sameSite: 'none', secure: true })
-                res.locals.message = 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
-                return true
+                }
+            else if (info.authType == "Admin")
+                { 
+                        if( refreshToken.role != "Admin")
+                                { 
+                                    return { authorized: false, cause: "Unauthorized" };
+                                }
+                        else if(refreshToken.role == "Admin")
+                                {
+                                   return { authorized: true, cause: "Authorized" };
+                                }
+                }
+            else if (info.authType == "Group")  
+                {   
+                
+                        let RTfind = info.emails.map((e)=> e.email).find( e => e == refreshToken.email );
+                        if(  !RTfind )
+                        { 
+                            return { authorized: false, cause: "Unauthorized" };
+                        }
+                        else if( RTfind)
+                        {
+                            return { authorized: true, cause: "Authorized" };
+                        }
+                }           
+                return { authorized: true, cause: "Authorized" }
             } catch (err) {
                 if (err.name === "TokenExpiredError") {
-                    res.status(401).json({ message: "Perform login again" });
+                    return { authorized: false, cause: "Perform login again" }
                 } else {
-                    res.status(401).json({ message: err.name });
+                    return { authorized: false, cause: err.name }
                 }
-                return false;
             }
         } else {
-            res.status(401).json({ message: err.name });
-            return false;
+            return { authorized: false, cause: err.name };
         }
     }
 }
-
 /**
  * Handle possible amount filtering options in the query parameters for getTransactionsByUser when called by a Regular user.
  * @param req the request object that can contain query parameters

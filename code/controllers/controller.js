@@ -13,7 +13,7 @@ export const createCategory = (req, res) => {
         const { type, color } = req.body;
         const new_categories = new categories({ type, color });
         new_categories.save()
-            .then(data => res.json({data : data}))
+            .then(data => res.json({data : data}))  //res.locals.message
             .catch(err => { throw err })
     } catch (error) {
         res.status(400).json({ error: error.message })
