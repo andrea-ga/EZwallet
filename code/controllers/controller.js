@@ -9,11 +9,13 @@ import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./
  */
 export const createCategory = (req, res) => {
     try {
-       if (!verifyAuth(req, res, { authType: "Admin" })) return ;
+
+      const adminAuth = verifyAuth(req, res, {authType: "Admin"})
+       if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
         const { type, color } = req.body;
         const new_categories = new categories({ type, color });
         new_categories.save()
-            .then(data => res.json({data : data}))  //res.locals.message
+            .then(data => res.json({data : data, message : res.locals.message}))  //res.locals.message
             .catch(err => { throw err })
     } catch (error) {
         res.status(400).json({ error: error.message })
@@ -44,7 +46,10 @@ export const createCategory = (req, res) => {
       
       export const updateCategory = async (req, res) => {
         try {
-          if (!verifyAuth(req, res, { authType: "Admin" })) return ;
+
+          const adminAuth = verifyAuth(req, res, {authType: "Admin"})
+          if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+
           // Call the updateCategory function with the provided parameters
           updateCategoryFunc(req.params.categoryName, req.body.newCategoryName);
           res.status(200).json({ message: "Category updated successfully" });
@@ -78,7 +83,10 @@ export const createCategory = (req, res) => {
       
       export const deleteCategory = async (req, res) => {
         try {
-          if (!verifyAuth(req, res, { authType: "Admin" })) return;
+          
+          const adminAuth = verifyAuth(req, res, {authType: "Admin"})
+          if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+
           // Call the deleteCategory function with the provided parameter
           deleteCategoryFunc(req.params.categoryName);
           res.status(200).json({ message: "Category deleted successfully" });
@@ -97,15 +105,16 @@ export const createCategory = (req, res) => {
  */
 export const getCategories = async (req, res) => {
     try {
-        const cookie = req.cookies
-        const currentUser= await User.findOne({refreshToken: cookie.refreshToken}); 
-        if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return res.status(400).json("Unauthorized");
+      
+        const simpleAuth = verifyAuth(req, res, {authType: "Simple"});
+        if (!simpleAuth.authorized) return res.status(401).json({ error: simpleAuth.cause});  //check the NUMBER
 
         let data = await categories.find({})
 
-        let filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }))
+        let filter = [];
+        if (data)filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }))
 
-        return res.json(filter)
+        return res.json({data: filter ,message : res.locals.message})
     } catch (error) {
         res.status(400).json({ error: error.message })
     }
@@ -120,13 +129,14 @@ export const getCategories = async (req, res) => {
  */
 export const createTransaction = async (req, res) => {
     try {
-        const cookie = req.cookies
-        const currentUser= await User.findOne({ "username" : req.params.username }); 
-        if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return res.status(400).json("Unauthorized");
+      
+      const userAuth=verifyAuth(req, res, { authType: "User", username: req.params.username })
+      if (!userAuth.authorized) return res.status(400).json({ error: userAuth.cause });
+
         const { username, amount, type } = req.body;
         const new_transactions = new transactions({ username, amount, type });
         new_transactions.save()
-            .then(data => res.json({data :data}))
+            .then(data => res.json({data :data , message : res.locals.message}))
             .catch(err => { throw err })
     } catch (error) {
         res.status(400).json({ error: error.message })
@@ -142,8 +152,9 @@ export const createTransaction = async (req, res) => {
  */
 export const getAllTransactions = async (req, res) => {
     try {
-        const cookie = req.cookies
-        if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
+        const adminAuth = verifyAuth(req, res, {authType: "Admin"})
+        if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+
         /**
          * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
          */
@@ -159,7 +170,7 @@ export const getAllTransactions = async (req, res) => {
             { $unwind: "$categories_info" }
         ]).then((result) => {
             let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }))
-            res.json(data);
+            res.json({data : data , message : res.locals.message});
         }).catch(error => { throw (error) })
     } catch (error) {
         res.status(400).json({ error: error.message })
@@ -189,12 +200,17 @@ export const getAllTransactions = async (req, res) => {
       
       export const getTransactionsByUser = async (req, res) => {
         try {
+
+          const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
+          if (!userAuth.authorized) return res.status(400).json({ error: userAuth.cause });
+
+
           const userId = req.params.userId;
           
           // Call the getTransactionByUser function to retrieve transactions for the user
           const transactions = await getTransactionByUserFunc(userId);
       
-          res.status(200).json(transactions);
+          res.status(200).json({data :transactions , message : res.locals.message});
         } catch (error) {
           res.status(500).json({ error: error.message });
         }
@@ -212,16 +228,14 @@ export const getAllTransactions = async (req, res) => {
  */
 
     export const getTransactionsByUserByCategory = async (req, res) => {
-    
-        console.log(req.params);
         try {
-            const cookie = req.cookies
-            if (!cookie.accessToken) {
-                return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-            }
+            
+            const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
+           if (!userAuth.authorized) return res.status(400).json({ error: userAuth.cause });
+
 
             const user = await User.findOne({ "username": req.params.username })
-            if (!user) return res.status(401).json({ message: "User not found" })
+            //if (!user) return res.status(401).json({ message: "User not found" })  //teoricamente non necessaria
 
             
             /**
@@ -251,7 +265,7 @@ export const getAllTransactions = async (req, res) => {
                 //{ $match: {type: req.params.category}},
             ]).then((result) => {
                 let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }))
-                res.json(data);
+                res.json({data :data , message : res.locals.message});
             }).catch(error => { throw (error) })
         } catch (error) {
             res.status(400).json({ error: error.message })
@@ -269,11 +283,7 @@ export const getAllTransactions = async (req, res) => {
  */
 export const getTransactionsByGroup = async (req, res) => {
     try {
-
-
-
-
-        
+      
     } catch (error) {
         res.status(400).json({ error: error.message })
     }
@@ -303,12 +313,12 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
  */
 export const deleteTransaction = async (req, res) => {
     try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+
+       const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
+       if (!userAuth.authorized) return res.status(400).json({ error: userAuth.cause });
+
         let data = await transactions.deleteOne({ _id: req.body._id });
-        return res.json("deleted");
+        return res.json({data : "success" , message : res.locals.message });
     } catch (error) {
         res.status(400).json({ error: error.message })
     }
@@ -325,13 +335,14 @@ export const deleteTransaction = async (req, res) => {
 export const deleteTransactions = async (req, res) => {
         try {
     
-            if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
-            const cookies = req.cookies
+            const adminAuth = verifyAuth(req, res, {authType: "Admin"})
+            if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+  
             const ids = req.body.ids
             for (const id of ids){
                 let data = await transactions.deleteOne({ _id: id });
             }
-            return res.json({message: "All the transaction deleted"});
+            return res.json({data : "All the transaction deleted" , message : res.locals.message});
         } catch (error) {
             res.status(400).json({ error: error.message })
         }

@@ -22,7 +22,7 @@ router.post('/login', login)
 /**
  * Routes for authenticated users
  */
-router.get("/categories", getCategories) //auth done
+router.get("/categories", getCategories) 
 router.get("/users/:username", getUser)
 router.post("/users/:username/transactions", createTransaction)
 router.get("/users/:username/transactions", getTransactionsByUser)
