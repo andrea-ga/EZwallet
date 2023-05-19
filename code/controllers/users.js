@@ -369,6 +369,57 @@ export const deleteUser = async (req, res) => {
       const adminAuth = verifyAuth(req, res, {authType: "Admin"}); 
       if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});
 
+        let countDeletionFromGroups = 0;
+        let removedFromGroup = false;
+  
+        const { email }= req.body; 
+        console.log(email);
+  
+        let groupsIdArr = [];
+  
+        const userFound = await User.findOne({email: email});
+  
+        // check if user exists
+        if (!userFound){
+          return res.status(401).json("User not found");
+        }
+  
+        // delete transactions if exists any
+        const deletedTransactions = await transactions.remove({username: userFound.username});
+
+        // find the groups and push all the ids in the arr
+        const t = await Group.find(
+          {
+            "members.email": email 
+          }).then((result)  => {
+            result.map(element => groupsIdArr.push(element._id.toString()))
+          });
+  
+          // update the Group list of memebers so remove the member 
+          const test = await Group.updateMany(
+            {members: {email: email} },
+              { $pull: { members: {email:email} }},
+          );
+  
+       // delete user from DB after all checks and the delete before
+        await User.deleteOne({email: email});
+  
+  
+      
+      // delete the group if in the previously ones found groups there are no members
+      for (let v in groupsIdArr){
+        let x = await Group.findOneAndDelete(
+        { $and: [ 
+          {_id : groupsIdArr[v]},
+          {$where: "this.members.length == 0"} ]}
+        ).then(()=> countDeletionFromGroups++);
+  
+        }
+        if (countDeletionFromGroups> 0)
+          removedFromGroup = true;
+  
+        res.status(200).json({data: {message : "User successful deleted", deletedTransactions: deletedTransactions.deletedCount, removedFromGroup: removedFromGroup}});
+
     } catch (err) {
         res.status(500).json({error : err.message})
     }
