@@ -366,35 +366,42 @@ export const removeFromGroup = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
     try {
-      const adminAuth = verifyAuth(req, res, {authType: "Admin"}); 
-      if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});
 
-        let countDeletionFromGroups = 0;
+      const adminAuth = verifyAuth(req, res, {authType: "Admin"}); 
+      if (!adminAuth.authorized) 
+        return res.status(401).json({ error: adminAuth.cause});
+
+        
+      
+        //let countDeletionFromGroups = 0; //useless
         let removedFromGroup = false;
-  
-        const { email }= req.body; 
-        console.log(email);
-  
         let groupsIdArr = [];
   
-        const userFound = await User.findOne({email: email});
+        let email = req.body.email; 
+         
+      
+      
+        const userFound = await User.findOne({"email": email});
   
         // check if user exists
         if (!userFound){
-          return res.status(401).json("User not found");
+          return res.status(401).json({error: "User not found"});
         }
-  
+        
         // delete transactions if exists any
         const deletedTransactions = await transactions.remove({username: userFound.username});
 
         // find the groups and push all the ids in the arr
-        const t = await Group.find(
+        const t = Group.find(
           {
             "members.email": email 
           }).then((result)  => {
-            result.map(element => groupsIdArr.push(element._id.toString()))
+            result.map((element) => {groupsIdArr.push(element._id.toString()) ;
+              removedFromGroup = true;})
           });
-  
+          
+          if (groupsIdArr.length > 0)
+            removedFromGroup = true;
           // update the Group list of memebers so remove the member 
           const test = await Group.updateMany(
             {members: {email: email} },
@@ -412,13 +419,12 @@ export const deleteUser = async (req, res) => {
         { $and: [ 
           {_id : groupsIdArr[v]},
           {$where: "this.members.length == 0"} ]}
-        ).then(()=> countDeletionFromGroups++);
+        );
   
         }
-        if (countDeletionFromGroups> 0)
-          removedFromGroup = true;
+        
   
-        res.status(200).json({data: {message : "User successful deleted", deletedTransactions: deletedTransactions.deletedCount, removedFromGroup: removedFromGroup}});
+        res.status(200).json({data: { deletedTransactions: deletedTransactions.deletedCount, removedFromGroup: removedFromGroup}, message : res.locals.message});
 
     } catch (err) {
         res.status(500).json({error : err.message})

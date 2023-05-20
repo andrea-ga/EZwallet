@@ -1,8 +1,10 @@
 import request from 'supertest';
 import { app } from '../app';
-import { User } from '../models/User.js';
-import { getUsers, getUser, createGroup,getGroup, getGroups } from '../controllers/users';
+import { User, Group } from '../models/User.js';
+import { transactions } from '../models/model';
+import { getUsers, getUser, createGroup,getGroup, getGroups,deleteUser } from '../controllers/users';
 import { verifyAuth } from '../controllers/utils';
+import { group } from 'console';
 
 /**
  * In order to correctly mock the calls to external modules it is necessary to mock them using the following line.
@@ -11,7 +13,9 @@ import { verifyAuth } from '../controllers/utils';
  * `jest.mock()` must be called for every external module that is called in the functions under test.
  */
 jest.mock("../models/User.js")
+jest.mock("../models/model.js")
 jest.mock("../controllers/utils.js")
+
 /**
  * Defines code to be executed before each test case is launched
  * In this case the mock implementation of `User.find()` is cleared, allowing the definition of a new mock implementation.
@@ -224,10 +228,10 @@ describe("getUser", () => {
 
 describe("createGroup", () => { 
 
-  beforeEach(() => {
+/*  beforeEach(() => {
     jest.resetAllMocks();
   });
-/*test("group creation correctly", async () => {
+test("group creation correctly", async () => {
     const mockReq = {
        name : "g1" ,
        memberEmails : ["mail1.com", "mail2.com"]
@@ -256,11 +260,11 @@ describe("createGroup", () => {
 })
 
 describe("getGroups", () => { 
-  beforeEach(() => {
+  /*beforeEach(() => {
     jest.resetAllMocks();
   });
 
-  /*test("admin request", async () => {
+  test("admin request", async () => {
     const mockReq = {
     }
     const mockRes = {
@@ -292,6 +296,139 @@ describe("addToGroup", () => { })
 
 describe("removeFromGroup", () => { })
 
-describe("deleteUser", () => { })
+describe("deleteUser", () => {
+beforeEach(() => {
+    jest.resetAllMocks();
+  });
+  test("no admin privileges", async () => {
+    //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
+    const mockReq = {
+      body : {
+      email : "us@01.com"
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    //jest.spyOn(User, "find").mockResolvedValue([])
+    verifyAuth.mockReturnValue({authorized : false , cause : "Unauthorized"})  
+    await deleteUser(mockReq, mockRes)
+
+    expect(User.findOne).not.toHaveBeenCalled()
+    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.json).toHaveBeenCalledWith({error : "Unauthorized"})
+  })
+test("user not found", async () => {
+    //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
+    const mockReq = {
+      body : {
+      email : "us@01.com"
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    //jest.spyOn(User, "find").mockResolvedValue([])
+    verifyAuth.mockReturnValue({authorized : true}) 
+    User.findOne.mockResolvedValue( undefined ); 
+
+    await deleteUser(mockReq, mockRes);
+    
+    expect(User.findOne).toHaveBeenCalled()
+    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.json).toHaveBeenCalledWith({error : "User not found"})
+  })
+
+test("User successfully deleted", async () => {
+    //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
+    const mockReq = {
+      body : {
+      email : "us@01.com"
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    //jest.spyOn(User, "find").mockResolvedValue([])
+    verifyAuth.mockReturnValue({authorized : true}) 
+    User.findOne.mockResolvedValue( { username: "test" ,
+      email: "us@01.com",
+      password: "rqgniqrgjnnqremcoeq3901084fvncr893dn9c",
+      role: "Regular",
+      refreshToken : "9924hfoewrhfuhorfoi34uf394uo4ifhrrhlf843fho"} );  
+
+    transactions.remove.mockResolvedValue( {deletedCount  : 3} ); 
+    Group.find.mockResolvedValue([ { "_id" : "idicjvri324d" , members : [{email : "us@01.com"}] } , { "_id" : "idicjvridìde24d" , members : [{email : "us@01.com"}]}  ]);
+    Group.updateMany.mockResolvedValue(true); 
+    User.deleteOne.mockReturnValue(true); 
+    Group.findOneAndDelete(true); 
+
+    await deleteUser(mockReq, mockRes)
+    
+    expect(User.findOne).toHaveBeenCalled()
+    expect(transactions.remove).toHaveBeenCalled()
+    expect( Group.find).toHaveBeenCalled()
+    expect(Group.updateMany).toHaveBeenCalled()
+    expect(User.deleteOne).toHaveBeenCalled()
+    expect(Group.findOneAndDelete).toHaveBeenCalled()
+    
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalledWith({data : { deletedTransactions : 3 , removedFromGroup : true } , message : mockRes.locals.refreshedTokenMessage})
+  })
+
+
+test("User successfully deleted, no in a group", async () => {
+    //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
+    const mockReq = {
+      body : {
+      email : "us@01.com"
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    //jest.spyOn(User, "find").mockResolvedValue([])
+    verifyAuth.mockReturnValue({authorized : true}) 
+    User.findOne.mockResolvedValue( { username: "test" ,
+      email: "us@01.com",
+      password: "rqgniqrgjnnqremcoeq3901084fvncr893dn9c",
+      role: "Regular",
+      refreshToken : "9924hfoewrhfuhorfoi34uf394uo4ifhrrhlf843fho"} );  
+
+    transactions.remove.mockResolvedValue( {deletedCount  : 3} ); 
+    Group.find.mockResolvedValue([]);
+    Group.updateMany.mockResolvedValue(true); 
+    User.deleteOne.mockReturnValue(true); 
+    Group.findOneAndDelete(true); 
+
+    await deleteUser(mockReq, mockRes)
+    
+    expect(User.findOne).toHaveBeenCalled()
+    expect(transactions.remove).toHaveBeenCalled()
+    expect( Group.find).toHaveBeenCalled()
+    expect(Group.updateMany).toHaveBeenCalled()
+    expect(User.deleteOne).toHaveBeenCalled()
+    expect(Group.findOneAndDelete).toHaveBeenCalled()
+    
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalledWith({data : { deletedTransactions : 3 , removedFromGroup : false } , message : mockRes.locals.refreshedTokenMessage})
+  })
+ })
 
 describe("deleteGroup", () => { })
