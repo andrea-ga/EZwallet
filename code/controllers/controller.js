@@ -200,31 +200,20 @@ export const getAllTransactions = async (req, res) => {
     - empty array is returned if there are no transactions made by the user
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
-    async function getTransactionByUserFunc(userId) {
-        try {
-          const transactions = await Transaction.find({
-            $or: [{ senderId: userId }, { receiverId: userId }],
-          });
-          return transactions;
-        } catch (error) {
-          console.error(error);
-          throw new Error("Error retrieving transactions");
-        }
+    aexport const getTransactionByUsers = async (req, res) => {
+      try {
+          const cookie = req.cookies;
+          if (!cookie.accessToken) {
+              return res.status(401).json({ message: "Unauthorized" }); // unauthorized
+          }
+  
+          // Assuming you have a "transactions" collection or model to query from
+          let data = await transactions.find({ userId: req.params.userId }); // Assuming userId is the field to match
+          return res.json(data);
+      } catch (error) {
+          res.status(400).json({ error: error.message });
       }
-      
-      export const getTransactionsByUser = async (req, res) => {
-        try {
-          const userId = req.params.userId;
-          
-          // Call the getTransactionByUser function to retrieve transactions for the user
-          const transactions = await getTransactionByUserFunc(userId);
-      
-          res.status(200).json(transactions);
-        } catch (error) {
-          res.status(500).json({ error: error.message });
-        }
-      }
-      
+  };
 
 
 /**
