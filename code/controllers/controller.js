@@ -61,32 +61,39 @@ export const createCategory = (req, res) => {
   - Optional behavior:
     - error 401 is returned if the specified category does not exist
  */
-    function deleteCategoryFunc(categoryName) {
-        // Find the index of the category with the given name
-        const categoryIndex = ezwallet.categories.findIndex(
-          (category) => category.name === categoryName
-        );
+    export const deleteCategory = async (req, res) => {
+      try {
+
+        if (!verifyAuth(req, res, { authType: "Admin" })) return ;
+        // check cookies
+        const cookie = req.cookies;
+        if (!cookie.accessToken) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+    
+        // the variable is an array retrieved from the request body
+        const cat = req.body.types;
+
+    
+        // Delete the category from the server/database using the categoryId
         
-        // If the category exists, remove it from the array
-        if (categoryIndex !== -1) {
-          ezwallet.categories.splice(categoryIndex, 1);
-          console.log(`Category "${categoryName}" deleted`);
-        } else {
-          console.log(`Category "${categoryName}" not found`);
+        
+        // find all the categories that have the type given in the req.body.type parameter and delete the category
+        // ---> if only one category per type or per color no foor loop needed. We have to check if color or type attribute are unique as tuple or as individual attribute
+        for (const c of cat){
+          console.log(c);
+          const deleted = await categories.findOneAndDelete({type: c}).then((e) => console.log(e))
+          .catch((error)=> {
+              res.status(400);
+          });
         }
+
+        res.status(200).json({ message: "Category updated successfully" });
+        
+      } catch (error) {
+        res.status(400).json({ error: error.message });
       }
-      
-      export const deleteCategory = async (req, res) => {
-        try {
-          if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
-          // Call the deleteCategory function with the provided parameter
-          deleteCategoryFunc(req.params.categoryName);
-          res.status(200).json({ message: "Category deleted successfully" });
-        } catch (error) {
-          res.status(400).json({ error: error.message });
-        }
-      };
-      
+    };
 
 /**
  * Return all the categories
