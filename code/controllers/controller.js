@@ -188,21 +188,19 @@ export const getAllTransactions = async (req, res) => {
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
     export const getTransactionByUsers = async (req, res) => {
-      try {
-          const cookie = req.cookies;
-          if (!cookie.accessToken) {
-              return res.status(401).json({ message: "Unauthorized" }); // unauthorized
-          }
-  
-          // Assuming you have a "transactions" collection or model to query from
-          let data = await transactions.find({ userId: req.params.userId }); // Assuming userId is the field to match
-          return res.json(data);
-      } catch (error) {
-          res.status(400).json({ error: error.message });
-      }
-  };
-
-
+        try {
+            const cookie = req.cookies;
+            if (!cookie.accessToken) {
+                return res.status(401).json({ message: "Unauthorized" }); // unauthorized
+            }
+    
+            // Assuming you have a "transactions" collection or model to query from
+            let data = await transactions.find({ userId: req.params.userId }); // Assuming userId is the field to match
+            return res.json(data);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    };
 /**
  * Return all transactions made by a specific user filtered by a specific category
   - Request Body Content: None
