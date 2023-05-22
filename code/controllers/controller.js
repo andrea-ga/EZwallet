@@ -42,12 +42,27 @@ export const createCategory = (req, res) => {
         }
       }
       
-      export const updateCategory = async (req, res) => {
+      export const updateCategory = (req, res) => {
         try {
-          if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
-          // Call the updateCategory function with the provided parameters
-          updateCategoryFunc(req.params.categoryName, req.body.newCategoryName);
-          res.status(200).json({ message: "Category updated successfully" });
+          const cookie = req.cookies;
+          if (!cookie.accessToken) {
+            return res.status(401).json({ message: "Unauthorized" });
+          }
+      
+          const categoryId = req.params.categoryId;
+          const { newCategoryName } = req.body;
+      
+          // Update the category in the server/database using the categoryId
+          categories.findByIdAndUpdate(categoryId, { name: newCategoryName }, { new: true })
+            .then(updatedCategory => {
+              if (!updatedCategory) {
+                return res.status(404).json({ message: "Category not found" });
+              }
+              res.json(updatedCategory);
+            })
+            .catch(err => {
+              throw err;
+            });
         } catch (error) {
           res.status(400).json({ error: error.message });
         }
