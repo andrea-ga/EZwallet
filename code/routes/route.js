@@ -22,7 +22,7 @@ router.post('/login', login)
 /**
  * Routes for authenticated users
  */
-router.get("/categories", getCategories)
+router.get("/categories", getCategories) 
 router.get("/users/:username", getUser)
 router.post("/users/:username/transactions", createTransaction)
 router.get("/users/:username/transactions", getTransactionsByUser)
@@ -41,8 +41,8 @@ router.patch("/groups/:name/remove", removeFromGroup)
 router.post("/categories", createCategory) //auth done, it is no present the validation of all the values
 router.patch("/categories/:type", updateCategory) //auth done
 router.delete("/categories", deleteCategory) //auth done
-router.get("/transactions", getAllTransactions) 
-router.delete("/transactions", deleteTransactions) 
+router.get("/transactions", getAllTransactions) //auth done
+router.delete("/transactions", deleteTransactions) //auth done
 router.get("/transactions/users/:username", getTransactionsByUser)
 router.get("/transactions/users/:username/category/:category", getTransactionsByUserByCategory)
 router.get("/transactions/groups/:name", getTransactionsByGroup)

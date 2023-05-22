@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken'
  * @throws an error if the query parameters include `date` together with at least one of `from` or `upTo`
  */
 export const handleDateFilterParams = (req) => {
+
 }
 
 /**
@@ -37,113 +38,60 @@ export const handleDateFilterParams = (req) => {
  */
 export const verifyAuth = (req, res, info) => {
     const cookie = req.cookies
-     
-    if (!cookie.accessToken ||!cookie.refreshToken) {
-        //res.status(401).json({ message: "Unauthorized" });
-        return false;
+    if (!cookie.accessToken || !cookie.refreshToken) {
+        return { authorized: false, cause: "Unauthorized" };
     }
     try {
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
         const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
         
-        const currentUser = 0;
-        //await User.findOne({refreshToken: cookie.refreshToken}); 
         if (info.authType == "User") 
-        {
-            if( decodedAccessToken.username != currentUser.username|| decodedRefreshToken.username != currentUser.username)
+        {   
+            const  username = info.username;
+            if( decodedAccessToken.username != username || decodedRefreshToken.username !=username)
+            {                
+                return { authorized: false, cause: "Unauthorized" };
+            }
+            else if( decodedAccessToken.username == username && decodedRefreshToken.username == username)
             {
-                res.status(401).json({ message: "Wrong username on cookies" });
-                return false;
+                return { authorized: true, cause: "Authorized" };
             }
-            else if( !decodedAccessToken && decodedRefreshToken.username != currentUser.username)
-            { 
-                res.status(401).json({ message: "Wrong username on cookies 2" });
-                return false;
-            }
-            else if( decodedAccessToken.username == currentUser.username && decodedRefreshToken == currentUser.username)
-            {
-                res.status(200).json({ message: "Success" })
-                return true ;
-            }
-            else if( !decodedAccessToken && decodedRefreshToken == currentUser.username)
-            { 
-                res.status(401).json({ message: "Success with AccessToken expired" });
-                return true;
-            }
-    
-
         }
-        
         else if (info.authType == "Admin")
-        {
+        {   
             if( decodedAccessToken.role != "Admin" || decodedRefreshToken.role != "Admin")
             {
-                //res.status(401).json({ message: "Wrong role" });
-                return false; 
-            }
-             else if( !decodedAccessToken && decodedRefreshToken.role != "Admin")
-            { 
-                //res.status(401).json({ message: "Wrong role 2" });
-                return false; 
+                return { authorized: false, cause: "Unauthorized" };
             }
             else if( decodedAccessToken.role == "Admin" && decodedRefreshToken.role == "Admin")
             {
-                //res.status(200).json({ message: "Success" });
-                return true;
-            }
-            else if( !decodedAccessToken && decodedRefreshToken.role == "Admin")
-            {
-                //res.status(200).json({ message: "Success 2" });
-                return true;
-            }
-
+                return { authorized: true, cause: "Authorized" };
+            }   
         }
-
-
-    /*          - authType === "Group":
- *              - either the accessToken or the refreshToken have a `email` which is not in the requested group => error 401
- *              - the accessToken is expired and the refreshToken has a `email` which is not in the requested group => error 401
- *              - both the accessToken and the refreshToken have a `email` which is in the requested group => success
- *              - the accessToken is expired and the refreshToken has a `email` which is in the requested group => success */
         else if (info.authType == "Group")  
         {   
-            
-            
-            if( decodedAccessToken.email || decodedRefreshToken.email ) //to implement if it is not in the group
+            let ATfind = info.emails.map((e)=> e.email).find( e => e == decodedAccessToken.email );
+            let RTfind = info.emails.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
+            if( !ATfind || !RTfind  ) 
             {
-                res.status(401).json({ message: "Wrong role" });
-                return false; 
+                return { authorized: false, cause: "Unauthorized" }; 
             }
-             else if( !decodedAccessToken && decodedRefreshToken.email)
-            { 
-                res.status(401).json({ message: "Wrong role 2" });
-                return false; 
-            }
-            else if( decodedAccessToken.email && decodedRefreshToken.email)
+            else if( ATfind  && RTfind )
             {
-                res.status(200).json({ message: "Success" });
-                return true;
+                return { authorized: true, cause: "Authorized" };
             }
-            else if( !decodedAccessToken && decodedRefreshToken.email)
-            {
-                res.status(200).json({ message: "Success 2" });
-                return true;
-            }
-        }      
-        
+        }
+             
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
-            res.status(401).json({ message: "Token is missing information" })
-            return false
+            return { authorized: false, cause: "Token is missing information" }
         }
         if (!decodedRefreshToken.username || !decodedRefreshToken.email || !decodedRefreshToken.role) {
-            res.status(401).json({ message: "Token is missing information" })
-            return false
+            return { authorized: false, cause: "Token is missing information" }
         }
         if (decodedAccessToken.username !== decodedRefreshToken.username || decodedAccessToken.email !== decodedRefreshToken.email || decodedAccessToken.role !== decodedRefreshToken.role) {
-            res.status(401).json({ message: "Mismatched users" });
-            return false;
+            return { authorized: false, cause: "Mismatched users" };
         }
-        return true
+        return { authorized: true, cause: "Authorized" }
     } catch (err) {
         if (err.name === "TokenExpiredError") {
             try {
@@ -155,23 +103,57 @@ export const verifyAuth = (req, res, info) => {
                     role: refreshToken.role
                 }, process.env.ACCESS_KEY, { expiresIn: '1h' })
                 res.cookie('accessToken', newAccessToken, { httpOnly: true, path: '/api', maxAge: 60 * 60 * 1000, sameSite: 'none', secure: true })
-                res.locals.message = 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
-                return true
+                res.locals.refreshedTokenMessage= 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
+                
+                if (info.authType == "User")     //case of access token expired
+                {   
+                        const username = info.username;
+                        if( refreshToken.username != currentUser.username)
+                        { 
+                            return { authorized: false, cause: "Unauthorized" };      
+                        }
+                        else if(refreshToken.username == currentUser.username)
+                        {
+                        return { authorized: true, cause: "Authorized" };
+                        }
+                }
+            else if (info.authType == "Admin")
+                { 
+                        if( refreshToken.role != "Admin")
+                                { 
+                                    return { authorized: false, cause: "Unauthorized" };
+                                }
+                        else if(refreshToken.role == "Admin")
+                                {
+                                   return { authorized: true, cause: "Authorized" };
+                                }
+                }
+            else if (info.authType == "Group")  
+                {   
+                
+                        let RTfind = info.emails.map((e)=> e.email).find( e => e == refreshToken.email );
+                        if(  !RTfind )
+                        { 
+                            return { authorized: false, cause: "Unauthorized" };
+                        }
+                        else if( RTfind)
+                        {
+                            return { authorized: true, cause: "Authorized" };
+                        }
+                }           
+                return { authorized: true, cause: "Authorized" }
             } catch (err) {
                 if (err.name === "TokenExpiredError") {
-                    res.status(401).json({ message: "Perform login again" });
+                    return { authorized: false, cause: "Perform login again" }
                 } else {
-                    res.status(401).json({ message: err.name });
+                    return { authorized: false, cause: err.name }
                 }
-                return false;
             }
         } else {
-            res.status(401).json({ message: err.name });
-            return false;
+            return { authorized: false, cause: err.name };
         }
     }
 }
-
 /**
  * Handle possible amount filtering options in the query parameters for getTransactionsByUser when called by a Regular user.
  * @param req the request object that can contain query parameters
