@@ -31,42 +31,30 @@ export const createCategory = (req, res) => {
     - error 401 is returned if new parameters have invalid values
  */
     export const updateCategory = (req, res) => {
-      try {
-        const cookie = req.cookies;
-        if (!cookie.accessToken) {
-          return res.status(401).json({ message: "Unauthorized" });
-        }
-    
-        const categoryId = req.params.categoryId;
-        const { newCategoryName } = req.body;
-    
-        // Update the category in the server/database using the categoryId
-        categories.findByIdAndUpdate(categoryId, { name: newCategoryName }, { new: true })
-          .then(updatedCategory => {
-            if (!updatedCategory) {
-              return res.status(404).json({ message: "Category not found" });
-            }
-            res.json(updatedCategory);
-          })
-          .catch(err => {
-            throw err;
-          });
-      } catch (error) {
-        res.status(400).json({ error: error.message });
-      }
-    };
-
-          const adminAuth = verifyAuth(req, res, {authType: "Admin"})
-          if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
-
-          // Call the updateCategory function with the provided parameters
-          updateCategoryFunc(req.params.categoryName, req.body.newCategoryName);
-          res.status(200).json({ message: "Category updated successfully" });
+        try {
+          const cookie = req.cookies;
+          if (!cookie.accessToken) {
+            return res.status(401).json({ message: "Unauthorized" });
+          }
+      
+          const categoryId = req.params.categoryId;
+          const { newCategoryName } = req.body;
+      
+          // Update the category in the server/database using the categoryId
+          categories.findByIdAndUpdate(categoryId, { name: newCategoryName }, { new: true })
+            .then(updatedCategory => {
+              if (!updatedCategory) {
+                return res.status(404).json({ message: "Category not found" });
+              }
+              res.json(updatedCategory);
+            })
+            .catch(err => {
+              throw err;
+            });
         } catch (error) {
           res.status(400).json({ error: error.message });
         }
       };
- 
 
 /**
  * Delete a category
@@ -108,10 +96,6 @@ export const createCategory = (req, res) => {
           res.status(400).json({ error: error.message });
         }
       };
-
-
-
-
 
 /**
  * Return all the categories
