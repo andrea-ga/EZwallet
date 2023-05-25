@@ -14,7 +14,7 @@ export const register = async (req, res) => {
     try {
         let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
         const { username, email, password } = req.body;
-        if (!username || !email || !password || username == "" || email == "" || password == "" || emailformat.test(email))
+        if (!username || !email || !password || username == "" || email == "" || password == "" || !emailformat.test(email))
             return res.status(400).json({ error: "Not valid request" });
         const emailAlreadyUsed = await User.findOne({ email: email });
         if (emailAlreadyUsed)
@@ -48,7 +48,7 @@ export const registerAdmin = async (req, res) => {
     try {
         let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
         const { username, email, password } = req.body;
-        if (!username || !email || !password || username == "" || email == "" || password == "" || emailformat.test(email))
+        if (!username || !email || !password || username == "" || email == "" || password == "" || !emailformat.test(email))
             return res.status(400).json({ error: "Not valid request" });
         const emailAlreadyUsed = await User.findOne({ email: email });
         if (emailAlreadyUsed)
