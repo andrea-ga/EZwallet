@@ -46,10 +46,16 @@ export const register = async (req, res) => {
  */
 export const registerAdmin = async (req, res) => {
     try {
-        console.log("RegisterAdmin");
-        const { username, email, password } = req.body
-        const existingUser = await User.findOne({ email: email });
-        if (existingUser) return res.status(400).json({ message: "you are already registered" });
+        let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+        const { username, email, password } = req.body;
+        if (!username || !email || !password || username == "" || email == "" || password == "" || emailformat.test(email))
+            return res.status(400).json({ error: "Not valid request" });
+        const emailAlreadyUsed = await User.findOne({ email: email });
+        if (emailAlreadyUsed)
+            return res.status(400).json({ error: "The mail is already used" });
+        const usernameAlreadyUsed = await User.findOne({ username: username });
+        if (usernameAlreadyUsed)
+            return res.status(400).json({ error: "The username is already used" });
         const hashedPassword = await bcrypt.hash(password, 12);
         const newUser = await User.create({
             username,
@@ -57,12 +63,14 @@ export const registerAdmin = async (req, res) => {
             password: hashedPassword,
             role: "Admin"
         });
-        res.status(200).json('user added succesfully');
+        res.status(200).json({data : { message : 'user added succesfully'}});
     } catch (err) {
         res.status(500).json(err);
     }
 
 }
+
+function validationRegistration(req)
 
 /**
  * Perform login 
