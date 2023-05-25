@@ -169,7 +169,9 @@ export const getGroup = async (req, res) => {
     try {
 
       const group = await Group.findOne({name : req.params.name});
-      const adminAuth = verifyAuth(req, res, {authType: "Admin"}); 
+      let simpleAuth = verifyAuth(req, res, {authType: "Simple"}); //if the cookies are valid
+      if(!simpleAuth.authorized)return res.status(401).json({ error: simpleAuth.cause});
+      let adminAuth = verifyAuth(req, res, {authType: "Admin"}); 
       if (adminAuth.authorized) {
         if(!group)res.status(401).json({ error: "Group not found" });
       }
@@ -199,26 +201,27 @@ export const getGroup = async (req, res) => {
 export const addToGroup = async (req, res) => {
     try {
         
-        const reAd = new RegExp("*/api/groups/*/insert");
-        const reUs = new RegExp("*/api/groups/*/add");
+        //const reAd = new RegExp('*/api/groups/*/insert');
+        const reAd = new RegExp("^.+/api/groups/[^/]+/insert$");
+
+        const reUs = new RegExp("^.+/api/groups/[^/]+/add$");
         let groupfind ;
 
         const adminAuth = verifyAuth(req, res, {authType: "Admin"}); 
 
         if (adminAuth.authorized && reAd.test(req.url)) // regexp for the URL 
         {
-          groupFind  = await Group.findOne({name : req.params.name});
-          if(!groupFind) res.status(401).json({error: "Group not found"});
+          groupfind  = await Group.findOne({name : req.params.name});
+          if(!groupfind) res.status(401).json({error: "Group not found"});
         }
         else if (reUs.test(req.url)) //regexp for the URL
         {
-          groupFind  = await Group.findOne({name : req.params.name});
-          let groupAuth = verifyAuth(req, res, { authType: "Group" , emaials : groupFind.members})
+          let groupAuth = verifyAuth(req, res, { authType: "Group" , emails : groupfind.members})
           if ( !group.authorized) return res.status(401).json({ error: groupAuth.cause});
         }
         else // useless
         {
-          return res.status(401).json({ message: "Unauthorized" });
+          return res.status(401).json({ error : "Unauthorized" });
         }
 
         const membersNotFound = [];
@@ -238,7 +241,7 @@ export const addToGroup = async (req, res) => {
         }
 
         if(newMembers.length === 0)
-            return res.status(401).json({message: "No new member"});
+            return res.status(401).json({error: "No new member"});
 
         const groupName = req.params.name;
         const group = await Group.findOneAndUpdate({name : groupName},
