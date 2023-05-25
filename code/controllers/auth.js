@@ -63,14 +63,12 @@ export const registerAdmin = async (req, res) => {
             password: hashedPassword,
             role: "Admin"
         });
-        res.status(200).json({data : { message : 'user added succesfully'}});
+        res.status(200).json({ data: { message: 'user added succesfully' } });
     } catch (err) {
         res.status(500).json(err);
     }
 
 }
-
-function validationRegistration(req)
 
 /**
  * Perform login 
@@ -81,15 +79,16 @@ function validationRegistration(req)
     - error 400 is returned if the supplied password does not match with the one in the database
  */
 export const login = async (req, res) => {
-    console.log("login");
-    const { email, password } = req.body
-    const cookie = req.cookies
-    const existingUser = await User.findOne({ email: email })
-    //if (verifyAuth(req, res, { authType: "Simple" })) return res.status(200).json("you are already logged in")
-    if (!existingUser) return res.status(400).json('please you need to register')
     try {
+        let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+        const { email, password } = req.body;
+        if (!email || !password || email == "" || password == "" || !emailformat.test(email))
+            return res.status(400).json({ error: "Not valid request" });
+        const existingUser = await User.findOne({ email: email })
+        if (!existingUser)
+            return res.status(400).json({error : 'please you need to register'})
         const match = await bcrypt.compare(password, existingUser.password)
-        if (!match) return res.status(400).json('wrong credentials')
+        if (!match) return res.status(400).json({error :'wrong credentials'})
         //CREATE ACCESSTOKEN
         const accessToken = jwt.sign({
             email: existingUser.email,
@@ -125,15 +124,15 @@ export const login = async (req, res) => {
  */
 export const logout = async (req, res) => {
     const refreshToken = req.cookies.refreshToken
-    if (!refreshToken) return res.status(400).json("user not found")
+    if (!refreshToken) return res.status(400).json({error : "user not found"})
     const user = await User.findOne({ refreshToken: refreshToken })
-    if (!user) return res.status(400).json('user not found')
+    if (!user) return res.status(400).json({error : 'user not found'})
     try {
         user.refreshToken = null
         res.cookie("accessToken", "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })
         res.cookie('refreshToken', "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })
         const savedUser = await user.save()
-        res.status(200).json('logged out')
+        res.status(200).json({data: {message :'logged out'}})
     } catch (error) {
         res.status(400).json(error)
     }
