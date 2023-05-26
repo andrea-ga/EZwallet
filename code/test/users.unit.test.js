@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../app';
 import { User, Group } from '../models/User.js';
 import { transactions } from '../models/model';
-import { getUsers, getUser, createGroup,getGroup, getGroups,deleteUser, addToGroup } from '../controllers/users';
+import { getUsers, getUser, createGroup,getGroup, getGroups,deleteUser, addToGroup, deleteGroup } from '../controllers/users';
 import { verifyAuth } from '../controllers/utils';
 import { group } from 'console';
 import { url } from 'inspector';
@@ -250,8 +250,9 @@ describe("createGroup", () => {
 
 beforeEach(() => {
     jest.resetAllMocks();
+    Group.prototype.save.mockClear();
   });
- /* test("Normal behavior", async () => {
+ /*test("Normal behavior", async () => {
     const mockReq = {
       cookies :  "ccc",
       body : {
@@ -274,7 +275,7 @@ beforeEach(() => {
     User.find.mockResolvedValue({username : "ciao", email : "hello"}) //check if all the users exist
     
     Group.findOne.mockResolvedValue(false)//no mail already in other groups
-    Group.insertMany.mockResolvedValue(true)
+    jest.spyOn(Group.prototype, 'save').mockResolvedValue({})
     await createGroup(mockReq, mockRes)
 
     expect(User.findOne).toHaveBeenCalled()
@@ -967,4 +968,92 @@ test("User successfully deleted, no in a group", async () => {
   
  })
 
-describe("deleteGroup", () => { })
+describe("deleteGroup", () => { 
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  test("not admin", async () => {
+    const mockReq = {
+      body : {
+          name : "family"
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized : false , cause : "Unauthorized"})  
+    await deleteGroup(mockReq, mockRes)
+
+    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.json).toHaveBeenCalledWith({error : "Unauthorized"})
+  })
+
+  test("bad request", async () => {
+    const mockReq = {
+      body : {
+          name : ""
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized :true})  
+    await deleteGroup(mockReq, mockRes)
+
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalledWith({error : "Bad request"})
+  })
+
+  test("group not found", async () => {
+    const mockReq = {
+      body : {
+          name : "family"
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized :true})  
+    Group.findOne.mockResolvedValue(false)
+    await deleteGroup(mockReq, mockRes)
+
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalledWith({error : "Group not found"})
+  })
+  test("success", async () => {
+    const mockReq = {
+      body : {
+          name : "family"
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized :true})  
+    Group.findOne.mockResolvedValue(true)
+    Group.deleteOne.mockResolvedValue(true)
+    await deleteGroup(mockReq, mockRes)
+
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalled()
+  })
+
+  
+})
