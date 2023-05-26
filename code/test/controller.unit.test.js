@@ -1,8 +1,11 @@
 import request from 'supertest';
 import { app } from '../app';
 import { categories, transactions } from '../models/model';
+import { createCategory } from "../controllers/controller.js";
+import { verifyAuth } from "../controllers/utils.js";
 
 jest.mock('../models/model');
+jest.mock("../controllers/utils.js");
 
 beforeEach(() => {
   categories.find.mockClear();
@@ -13,9 +16,131 @@ beforeEach(() => {
   transactions.prototype.save.mockClear();
 });
 
-describe("createCategory", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+describe("createCategory", () => {
+    test('should return the new category', async () => {
+        const mockReq = {body : {type: "type1", color: "color1"}};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        const newCategory = {type: "type1", color: "color1"};
+        jest.spyOn(categories, "findOne").mockResolvedValue(null);
+        jest.spyOn(categories.prototype, "save").mockResolvedValue(newCategory);
+        verifyAuth.mockReturnValue({authorized : true});
+
+        await createCategory(mockReq, mockRes);
+
+        expect(categories.findOne).toHaveBeenCalled();
+        expect(categories.prototype.save).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            data: newCategory,
+            refreshedTokenMessage: mockRes.locals.refreshedTokenMessage
+        });
+    });
+
+    test('Unauthorized access', async () => {
+        const mockReq = {body : {type: "type1", color: "color1"}};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        const newCategory = {type: "type1", color: "color1"};
+        jest.spyOn(categories, "findOne").mockResolvedValue("");
+        jest.spyOn(categories.prototype, "save").mockResolvedValue(newCategory);
+        verifyAuth.mockReturnValue({authorized : false, cause: "Unauthorized"});
+        await createCategory(mockReq, mockRes);
+
+        expect(categories.prototype.save).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({error: "Unauthorized"});
+    });
+
+    test('raise exception', async () => {
+        const mockReq = {body : {type: "type1", color: "color1"}};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        jest.spyOn(categories, "findOne").mockResolvedValue("");
+        categories.prototype.save.mockImplementation(() => {
+            throw new Error("Internal error");
+        })
+        verifyAuth.mockReturnValue({authorized : true});
+        await createCategory(mockReq, mockRes);
+
+        expect(categories.prototype.save).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(500);
+        expect(mockRes.json).toHaveBeenCalled();
+    });
+
+    test('empty type field', async () => {
+        const mockReq = {body : {type: "", color: "color1"}};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        jest.spyOn(categories, "findOne").mockResolvedValue("");
+        verifyAuth.mockReturnValue({authorized : true});
+        await createCategory(mockReq, mockRes);
+
+        expect(categories.prototype.save).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: "type field is empty"});
+    });
+
+    test('empty color field', async () => {
+        const mockReq = {body : {type: "type1", color: ""}};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        jest.spyOn(categories, "findOne").mockResolvedValue("");
+        verifyAuth.mockReturnValue({authorized : true});
+        await createCategory(mockReq, mockRes);
+
+        expect(categories.prototype.save).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: "color field is empty"});
+    });
+
+    test('type already present', async () => {
+        const mockReq = {body : {type: "type1", color: "color1"}};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        verifyAuth.mockReturnValue({authorized : true});
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        await createCategory(mockReq, mockRes);
+
+        expect(categories.prototype.save).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: "type already present"});
     });
 })
 

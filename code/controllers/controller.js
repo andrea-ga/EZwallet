@@ -7,16 +7,28 @@ import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./
   - Request Body Content: An object having attributes `type` and `color`
   - Response `data` Content: An object having attributes `type` and `color`
  */
-export const createCategory = (req, res) => {
+export const createCategory = async (req, res) => {
     try {
-       if (!verifyAuth(req, res, { authType: "Admin" })) return ;
+        const adminAuth = verifyAuth(req, res, {authType: "Admin"});
+        if (!adminAuth.authorized)
+            return res.status(401).json({ error: adminAuth.cause});
+
         const { type, color } = req.body;
-        const new_categories = new categories({ type, color });
-        new_categories.save()
-            .then(data => res.json({data : data}))  //res.locals.message
-            .catch(err => { throw err })
+        if(!type)
+            return res.status(400).json({ error: "type field is empty"});
+        if(!color)
+            return res.status(400).json({ error: "color field is empty"});
+
+        const found = await categories.findOne({type : type});
+        if(found)
+            return res.status(400).json({ error: "type already present"});
+
+        const new_categories = new categories({type, color});
+        const data = await new_categories.save();
+
+        return res.status(200).json({data: {type: data.type, color: data.color}, refreshedTokenMessage: res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 
