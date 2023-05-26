@@ -48,7 +48,7 @@ describe("getUsers", () => {
     await getUsers(mockReq, mockRes)
     expect(User.find).toHaveBeenCalled()
     expect(mockRes.status).toHaveBeenCalledWith(200)
-    expect(mockRes.json).toHaveBeenCalledWith({data : [], message: mockRes.locals.refreshedTokenMessage})
+    expect(mockRes.json).toHaveBeenCalledWith({data : [], refreshedTokenMessage: mockRes.locals.refreshedTokenMessage})
   })
 
   test("should retrieve list of all users", async () => {
@@ -67,7 +67,7 @@ describe("getUsers", () => {
     await getUsers(mockReq, mockRes)
     expect(User.find).toHaveBeenCalled()
     expect(mockRes.status).toHaveBeenCalledWith(200)
-    expect(mockRes.json).toHaveBeenCalledWith({data :retrievedUsers, message: mockRes.locals.refreshedTokenMessage})
+    expect(mockRes.json).toHaveBeenCalledWith({data :retrievedUsers, refreshedTokenMessage: mockRes.locals.refreshedTokenMessage})
   })
 
   test("Unauthorized access", async () => {
@@ -111,6 +111,8 @@ describe("getUsers", () => {
   })
 })
 
+
+
 describe("getUser", () => { 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -138,7 +140,24 @@ describe("getUser", () => {
     expect(mockRes.json).toHaveBeenCalledWith({data :retrievedUser, message: mockRes.locals.refreshedTokenMessage})
   })
 
-  
+  test("Wrong path", async () => {
+    const mockReq = {
+      params :{ username : "" }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+               }
+      }
+    //the first one is for the user/ the second one for the admin
+    
+    await getUser(mockReq, mockRes)
+    //expect(User.findOne).toHaveBeenCalled()
+    expect(mockRes.status).toHaveBeenCalledWith(404)
+    expect(mockRes.json).toHaveBeenCalled()
+  })
   test("no credential ", async () => {
     const mockReq = {
       params :{ username : "test1" }
@@ -176,7 +195,7 @@ describe("getUser", () => {
     
     await getUser(mockReq, mockRes)
     expect(User.findOne).toHaveBeenCalled();
-    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.status).toHaveBeenCalledWith(400)
     expect(mockRes.json).toHaveBeenCalledWith({error: "User not found"})
   })
   
