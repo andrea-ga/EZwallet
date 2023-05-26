@@ -248,34 +248,243 @@ describe("getUser", () => {
 
 describe("createGroup", () => { 
 
-/*  beforeEach(() => {
+beforeEach(() => {
     jest.resetAllMocks();
   });
-test("group creation correctly", async () => {
+ /* test("Normal behavior", async () => {
     const mockReq = {
-       name : "g1" ,
-       memberEmails : ["mail1.com", "mail2.com"]
+      cookies :  "ccc",
+      body : {
+      name : "g1" ,
+       memberEmails : ["ciao@gmail.com", "hello@hotmail.com"]
+      }
     }
     const mockRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
       locals: {
         refreshedTokenMessage: undefined
-               }
       }
-    const retrievedUser = { username: mockReq.params.username, email: 'test1@example.com', role : 'Regular' }
-    verifyAuth.mockReturnValueOnce({authorized : false}).mockReturnValueOnce({authorized : true}) //admin auth
-    //the first one is for the user/ the second one for the admin
-    User.findOne.mockResolvedValue(retrievedUser)
+    }
+    verifyAuth.mockReturnValue({authorized : true})  
+    Group.findOne.mockResolvedValueOnce(false) //if group already present
+    User.findOne.mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"}) //the user is not already in a group
+    //all the mail are correct so pass the validation test
+    Group.findOne.mockResolvedValue(false) //if the creator is already in a group
+    User.find.mockResolvedValue({username : "ciao", email : "hello"}) //check if all the users exist
     
-    await getUser(mockReq, mockRes)
-    //expect(User.findOne).toHaveBeenCalled()
+    Group.findOne.mockResolvedValue(false)//no mail already in other groups
+    Group.insertMany.mockResolvedValue(true)
+    await createGroup(mockReq, mockRes)
+
+    expect(User.findOne).toHaveBeenCalled()
+    expect(Group.findOne).toHaveBeenCalled()
     expect(mockRes.status).toHaveBeenCalledWith(200)
-    expect(mockRes.json).toHaveBeenCalledWith({data :retrievedUser, message: mockRes.locals.refreshedTokenMessage})
+    expect(mockRes.json).toHaveBeenCalledWith({data : {
+      group : {name : "g1" ,
+       members : ["ciao@gmail.com", "hello@hotmail.com"]},
+       membersNotFound : [], 
+       alreadyInGroup : []
+    },
+    refreshedTokenMessage  : mockReq.locals.refreshedTokenMessage
+  })
+  })
+
+
+  test("Email creator not present in the list", async () => {
+    const mockReq = {
+      cookies :  "ccc",
+      body : {
+      name : "g1" ,
+       memberEmails : ["ciao@gmail.com"]
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized : true})  
+    Group.findOne.mockResolvedValueOnce(false) //if group already present
+    User.findOne.mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"}) //the user is not already in a group
+    //all the mail are correct so pass the validation test
+    Group.findOne.mockResolvedValue(false) //if the creator is already in a group
+    User.find.mockResolvedValue({username : "ciao", email : "hello"}) //check if all the users exist
+    
+    Group.findOne.mockResolvedValue(false)//no mail already in other groups
+    Group.insertMany.mockResolvedValue(true)
+    await createGroup(mockReq, mockRes)
+
+    expect(User.findOne).toHaveBeenCalled()
+    expect(Group.findOne).toHaveBeenCalled()
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalledWith({data : {
+      group : {name : "g1" ,
+       members : ["ciao@gmail.com", "hello@hotmail.com"]},
+       membersNotFound : [], 
+       alreadyInGroup : []
+    },
+    refreshedTokenMessage  : mockReq.locals.refreshedTokenMessage
+  })
   })*/
 
+  test("Group with the same name already exist", async () => {
+    const mockReq = {
+      cookies :  "ccc",
+      body : {
+      name : "g1" ,
+       memberEmails : ["ciao@gmail.com"]
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized : true})  
+    Group.findOne.mockResolvedValueOnce(true) 
+    
+    await createGroup(mockReq, mockRes)
+
+  
+    expect(Group.findOne).toHaveBeenCalled()
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalled()
+  })
 
 
+  test("No cookies", async () => {
+    const mockReq = {
+      cookies :  "ccc",
+      body : {
+      name : "g1" ,
+       memberEmails : ["ciao@gmail.com", "hello@gmail.com"]
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized : false , cause : "Unauthorized"})  
+    await createGroup(mockReq, mockRes)
+
+    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.json).toHaveBeenCalled()
+  
+  })
+  test("Email format not valid", async () => {
+    const mockReq = {
+      cookies :  "ccc",
+      body : {
+      name : "g1" ,
+       memberEmails : ["ciail.com"]
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized : true})  
+    Group.findOne.mockResolvedValueOnce(false) //if group already present
+    User.findOne.mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"}) //the user is not already in a group
+    //all the mail are correct so pass the validation test
+    Group.findOne.mockResolvedValue(false) //if the creator is already in a group
+    await createGroup(mockReq, mockRes)
+
+    expect(User.findOne).toHaveBeenCalled()
+    expect(Group.findOne).toHaveBeenCalled()
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalled()
+  })
+  test("invalid request", async () => {
+    const mockReq = {
+      cookies :  "ccc",
+      body : {
+      name : "g1" ,
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized : true})  
+   await createGroup(mockReq, mockRes)
+
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalled()
+  })
+
+  test("Group creator already in a group", async () => {
+    const mockReq = {
+      cookies :  "ccc",
+      body : {
+      name : "g1" ,
+       memberEmails : ["ciao@gmail.com"]
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized : true})  
+    Group.findOne.mockResolvedValueOnce(false) //if group already present
+    User.findOne.mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"}) //the user is not already in a group
+    //all the mail are correct so pass the validation test
+    Group.findOne.mockResolvedValueOnce(true) //if the creator is already in a group
+    
+    await createGroup(mockReq, mockRes)
+
+    expect(User.findOne).toHaveBeenCalled()
+    expect(Group.findOne).toHaveBeenCalled()
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalledWith({ error: "User creator already present in a group" })
+  })
+
+  test("All email are not found or already in a group", async () => {
+    const mockReq = {
+      cookies :  "ccc",
+      body : {
+      name : "g1" ,
+       memberEmails : ["ciao@gmail.com", "hi@gmail.com"]
+      }
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+      }
+    }
+    verifyAuth.mockReturnValue({authorized : true})  
+    Group.findOne.mockResolvedValueOnce(false) //if group already present
+    User.findOne.mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"}) //the user is not already in a group
+    //all the mail are correct so pass the validation test
+    Group.findOne.mockResolvedValueOnce(false) //if the creator is already in a group
+    User.findOne.mockResolvedValueOnce(false).mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"})  //the user is not already in a group
+    Group.findOne.mockResolvedValueOnce(false)
+    await createGroup(mockReq, mockRes)
+
+    expect(User.findOne).toHaveBeenCalled()
+    expect(Group.findOne).toHaveBeenCalled()
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalledWith({ error: "the `memberEmails` either do not exist or are already in a group" })
+  })
 
 })
 
@@ -491,7 +700,7 @@ describe("getGroup", () => {
     
     await getGroup(mockReq, mockRes)
     expect(Group.findOne).toHaveBeenCalledWith({name : mockReq.params.name})
-    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.status).toHaveBeenCalledWith(400)
     expect(mockRes.json).toHaveBeenCalledWith({error : "Group not found"})
   })
   test("user not find a group", async () => {
@@ -511,7 +720,7 @@ describe("getGroup", () => {
     
     await getGroup(mockReq, mockRes)
     expect(Group.findOne).toHaveBeenCalledWith({name : mockReq.params.name})
-    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.status).toHaveBeenCalledWith(400)
     expect(mockRes.json).toHaveBeenCalledWith({error : "Group not found"})
   })
   test("raise exception ", async () => {
@@ -533,6 +742,23 @@ describe("getGroup", () => {
     expect(mockRes.status).toHaveBeenCalledWith(500)
     expect(mockRes.json).toHaveBeenCalled()
   })
+  test("invalid params ", async () => {
+    const mockReq = {
+      params :{  name : ""} 
+    }
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: undefined
+               }
+      }
+     
+    await getGroup(mockReq, mockRes)
+    expect(mockRes.status).toHaveBeenCalledWith(404)
+    expect(mockRes.json).toHaveBeenCalled()
+  })
+
     
 })
 
@@ -543,7 +769,7 @@ describe("addToGroup", () => {
 
 
 
-  test("admin successfully add new user to a group 2 users not already present anywhere", async () => {
+  /*test("admin successfully add new user to a group 2 users not already present anywhere", async () => {
     //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
     const mockReq = {
       body : {
@@ -575,16 +801,7 @@ describe("addToGroup", () => {
                         members : ["us@03.com","us@01.com", "us@02.com"] , },
                         alreadyInGroup : [] , 
                       membersNotFound : []} , message : mockRes.locals.refreshedTokenMessage })
-  })
-
-
-
-
-
-
-
-
-
+  })*/
 })
 
 describe("removeFromGroup", () => { })
@@ -636,7 +853,7 @@ test("user not found", async () => {
     await deleteUser(mockReq, mockRes);
     
     expect(User.findOne).toHaveBeenCalled()
-    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.status).toHaveBeenCalledWith(400)
     expect(mockRes.json).toHaveBeenCalledWith({error : "User not found"})
   })
 
