@@ -109,17 +109,19 @@ export const createCategory = async (req, res) => {
  */
 export const getCategories = async (req, res) => {
     try {
-        const cookie = req.cookies
-        const currentUser= await User.findOne({refreshToken: cookie.refreshToken}); 
-        if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return res.status(400).json("Unauthorized");
+        const simpleAuth = verifyAuth(req, res, {authType: "Simple"});
+        if (!simpleAuth.authorized)
+            return res.status(401).json({ error: simpleAuth.cause});
 
-        let data = await categories.find({})
+        const data = await categories.find({});
 
-        let filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }))
+        let filter = [];
+        if (data)
+            filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }));
 
-        return res.json(filter)
+        return res.status(200).json({data: filter , refreshedTokenMessage : res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 

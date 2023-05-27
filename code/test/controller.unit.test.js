@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { app } from '../app';
 import { categories, transactions } from '../models/model';
-import { createCategory } from "../controllers/controller.js";
+import { createCategory, getCategories } from "../controllers/controller.js";
 import { verifyAuth } from "../controllers/utils.js";
 
 jest.mock('../models/model');
@@ -156,9 +156,99 @@ describe("deleteCategory", () => {
     });
 })
 
-describe("getCategories", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+describe("getCategories", () => {
+    test('should return empty list if there are no categories', async () => {
+        const mockReq = {};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        jest.spyOn(categories, "find").mockResolvedValue([]);
+        verifyAuth.mockReturnValue({authorized : true});
+
+        await getCategories(mockReq, mockRes);
+
+        expect(categories.find).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            data: [],
+            refreshedTokenMessage: mockRes.locals.refreshedTokenMessage
+        });
+    });
+
+    test('should retrieve list of all categories', async () => {
+        const mockReq = {};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        const retrievedCategories = [{type: "type1", color: "color1"},
+            {type: "type2", color: "color2"}];
+        jest.spyOn(categories, "find").mockResolvedValue(retrievedCategories);
+        verifyAuth.mockReturnValue({authorized : true});
+
+        await getCategories(mockReq, mockRes);
+
+        expect(categories.find).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            data: retrievedCategories,
+            refreshedTokenMessage: mockRes.locals.refreshedTokenMessage
+        });
+    });
+
+    test('Unauthorized access', async () => {
+        const mockReq = {};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        verifyAuth.mockReturnValue({authorized : false, cause: "Unauthorized"});
+
+        await getCategories(mockReq, mockRes);
+
+        expect(categories.find).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "Unauthorized"
+        });
+    });
+
+    test('raise exception', async () => {
+        const mockReq = {};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        const retrievedCategories = [[{type: "type1", color: "color1"},
+            {type: "type2", color: "color2"}]]
+        jest.spyOn(categories, "find").mockResolvedValue(retrievedCategories);
+        verifyAuth.mockReturnValue({authorized : true});
+        categories.find.mockImplementation(() => {
+            throw new Error("Internal error");
+        })
+
+        await getCategories(mockReq, mockRes);
+
+        expect(categories.find).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(500);
+        expect(mockRes.json).toHaveBeenCalledWith({error: "Internal error"});
     });
 })
 
