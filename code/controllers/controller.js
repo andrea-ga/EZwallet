@@ -187,7 +187,7 @@ export const getAllTransactions = async (req, res) => {
     - empty array is returned if there are no transactions made by the user
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
-    export const getTransactionByUsers = async (req, res) => {
+    export const getTransactionByUser = async (req, res) => {
         try {
             const cookie = req.cookies;
             if (!cookie.accessToken) {
