@@ -15,7 +15,7 @@ export const getUsers = async (req, res) => {
   try {
 
     const adminAuth = verifyAuth(req, res, { authType: "Admin" })
-    if (!adminAuth.authorized)
+    if (!adminAuth.flag)
       return res.status(401).json({ error: adminAuth.cause });  //check the NUMBER
 
     let user = await User.find();
@@ -40,13 +40,13 @@ export const getUser = async (req, res) => {
       res.status(404).json({ error: "Not found" })
     }
     const userAuth = verifyAuth(req, res, { authType: "User", username: username })
-    if (userAuth.authorized) //the admin call this method
+    if (userAuth.flag) //the admin call this method
     {
 
     }
     else {
       const adminAuth = verifyAuth(req, res, { authType: "Admin" })
-      if (!adminAuth.authorized)
+      if (!adminAuth.flag)
         return res.status(401).json({ error: adminAuth.cause });
     }
 
@@ -78,7 +78,7 @@ export const createGroup = async (req, res) => {
     let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
 
     const simpleAuth = verifyAuth(req, res, { authType: "Simple" })
-    if (!simpleAuth.authorized)
+    if (!simpleAuth.flag)
       return res.status(401).json({ error: simpleAuth.cause });
 
 
@@ -163,7 +163,7 @@ export const getGroups = async (req, res) => {
   try {
 
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
-    if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause });
+    if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause });
 
     const group = await Group.find();
     let groups = group.map(e => ({ "name": e.name, "members": e.members }));
@@ -187,15 +187,15 @@ export const getGroup = async (req, res) => {
       return res.status(404).json({ error: "Not foun" })
     const group = await Group.findOne({ name: req.params.name });
     let simpleAuth = verifyAuth(req, res, { authType: "Simple" }); //if the cookies are valid
-    if (!simpleAuth.authorized) return res.status(401).json({ error: simpleAuth.cause });
+    if (!simpleAuth.flag) return res.status(401).json({ error: simpleAuth.cause });
     let adminAuth = verifyAuth(req, res, { authType: "Admin" });
-    if (adminAuth.authorized) {
+    if (adminAuth.flag) {
       if (!group) res.status(400).json({ error: "Group not found" });
     }
     else {
       if (!group) res.status(400).json({ error: "Group not found" });
       const groupAuth = verifyAuth(req, res, { authType: "Group", emails: group.members });
-      if (!groupAuth.authorized) return res.status(401).json({ error: groupAuth.cause });
+      if (!groupAuth.flag) return res.status(401).json({ error: groupAuth.cause });
     }
     res.status(200).json({ data: group, refreshedTokenMessage: res.locals.refreshedTokenMessage });
   } catch (err) {
@@ -226,7 +226,7 @@ export const addToGroup = async (req, res) => {
 
 
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
-    if (adminAuth.authorized && reAd.test(req.path)) // regexp for the URL 
+    if (adminAuth.flag && reAd.test(req.path)) // regexp for the URL 
     {
       groupfind = await Group.findOne({ name: req.params.name });
       if (!groupfind)
@@ -238,7 +238,7 @@ export const addToGroup = async (req, res) => {
       if (!groupfind) 
         return res.status(400).json({ error: "Group not found" });
       let groupAuth = verifyAuth(req, res, { authType: "Group", emails: groupfind.members })
-      if (!groupAuth.authorized) 
+      if (!groupAuth.flag) 
         return res.status(401).json({ error: groupAuth.cause });
     }
     else 
@@ -319,7 +319,7 @@ export const removeFromGroup = async (req, res) => {
     let group = await Group.findOne({ name: req.params.name });
     let adminAuth = verifyAuth(req, res, { authType: "Admin" });
 
-    if (adminAuth.authorized && reAd.test(req.path)) // regexp for the URL 
+    if (adminAuth.flag && reAd.test(req.path)) // regexp for the URL 
     {
       if (!group)
          return res.status(400).json({ error: "Group not found" });
@@ -329,7 +329,7 @@ export const removeFromGroup = async (req, res) => {
       if (!group) 
         return res.status(400).json({ error: "Group not found" })
       let groupAuth = verifyAuth(req, res, { authType: "Group", emails: group.members });
-      if (!groupAuth.authorized)
+      if (!groupAuth.flag)
          return res.status(401).json({ error: groupAuth.cause });
     }
     else {
@@ -407,7 +407,7 @@ export const deleteUser = async (req, res) => {
     let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
 
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
-    if (!adminAuth.authorized)
+    if (!adminAuth.flag)
       return res.status(401).json({ error: adminAuth.cause });
 
 
@@ -485,7 +485,7 @@ export const deleteUser = async (req, res) => {
 export const deleteGroup = async (req, res) => {   //still to implement Admin and not user
   try {
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
-    if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause });
+    if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause });
     const name = req.body.name;
     if (!name || name == "")
       return res.status(400).json({ error: "Bad request" })

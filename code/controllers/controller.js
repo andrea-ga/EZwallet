@@ -9,9 +9,9 @@ import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./
  */
 export const createCategory = (req, res) => {
     try {
-
+    
       const adminAuth = verifyAuth(req, res, {authType: "Admin"})
-       if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+       if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
         const { type, color } = req.body;
         const new_categories = new categories({ type, color });
         new_categories.save()
@@ -108,7 +108,7 @@ export const getCategories = async (req, res) => {
     try {
       
         const simpleAuth = verifyAuth(req, res, {authType: "Simple"});
-        if (!simpleAuth.authorized) return res.status(401).json({ error: simpleAuth.cause});  //check the NUMBER
+        if (!simpleAuth.flag) return res.status(401).json({ error: simpleAuth.cause});  //check the NUMBER
 
         let data = await categories.find({})
 
@@ -132,7 +132,7 @@ export const createTransaction = async (req, res) => {
     try {
       
       const userAuth=verifyAuth(req, res, { authType: "User", username: req.params.username })
-      if (!userAuth.authorized) return res.status(400).json({ error: userAuth.cause });
+      if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
 
         const { username, amount, type } = req.body;
         const new_transactions = new transactions({ username, amount, type });
@@ -154,7 +154,7 @@ export const createTransaction = async (req, res) => {
 export const getAllTransactions = async (req, res) => {
     try {
         const adminAuth = verifyAuth(req, res, {authType: "Admin"})
-        if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+        if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
 
         /**
          * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
@@ -214,7 +214,7 @@ export const getAllTransactions = async (req, res) => {
         try {
             
             const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
-           if (!userAuth.authorized) return res.status(400).json({ error: userAuth.cause });
+           if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
 
 
             const user = await User.findOne({ "username": req.params.username })
@@ -382,7 +382,7 @@ export const deleteTransaction = async (req, res) => {
     try {
 
        const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
-       if (!userAuth.authorized) return res.status(400).json({ error: userAuth.cause });
+       if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
 
         let data = await transactions.deleteOne({ _id: req.body._id });
         return res.json({data : "success" , message : res.locals.message });
@@ -403,7 +403,7 @@ export const deleteTransactions = async (req, res) => {
         try {
     
             const adminAuth = verifyAuth(req, res, {authType: "Admin"})
-            if (!adminAuth.authorized) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+            if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
   
             const ids = req.body.ids
             for (const id of ids){
