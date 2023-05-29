@@ -306,13 +306,65 @@ export const getAllTransactions = async (req, res) => {
  */
 export const getTransactionsByGroup = async (req, res) => {
     try {
+        const name = req.params.name;
+        const emails = [];
 
+        const regExp = new RegExp("/transactions/*"); //Admin-only route
+        if(regExp.test(req.url)) {
+            const adminAuth = verifyAuth(req, res, {authType: "Admin"})
+            if (!adminAuth.authorized)
+                return res.status(401).json({error : adminAuth.cause});
 
+            const group = await Group.findOne({name: name});
+            if (!group)
+                return res.status(400).json({error: "Group not found"});
 
+            for(const m of group.members)
+                emails.push(m.email);
+        } else {
+            const group = await Group.findOne({name: name});
+            if (!group)
+                return res.status(400).json({error: "Group not found"});
 
-        
+            const groupAuth = verifyAuth(req, res, {authType: "Group", emails: group.members});
+            if (!groupAuth.authorized)
+                return res.status(401).json({error: groupAuth.cause});
+
+            for(const m of group.members)
+                emails.push(m.email);
+        }
+
+        const groupT = [];
+
+        const result = await transactions.aggregate([
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "type",
+                    foreignField: "type",
+                    as: "categories_info"
+                }
+            },
+            { $unwind: "$categories_info" }
+        ]);
+
+        const data = result.map(v => Object.assign({}, {username: v.username, amount: v.amount,
+            type: v.type, color: v.categories_info.color, date: v.date }));
+
+        async function check() {
+            for (const t of data) {
+                const user = await User.findOne({username: t.username});
+
+                if (user && emails.some(e => e === user.email))
+                    groupT.push(t);
+            }
+        }
+
+        await check();
+
+        return res.status(200).json({data : groupT, refreshedTokenMessage : res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 
