@@ -44,7 +44,19 @@ export const verifyAuth = (req, res, info) => {
     try {
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
         const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
-        
+
+        if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
+            return { flag: false, cause: "Token is missing information" }
+        }
+        if (!decodedRefreshToken.username || !decodedRefreshToken.email || !decodedRefreshToken.role) {
+            return { flag: false, cause: "Token is missing information" }
+        }
+        if (decodedAccessToken.username !== decodedRefreshToken.username || decodedAccessToken.email !== decodedRefreshToken.email || decodedAccessToken.role !== decodedRefreshToken.role) {
+            return { flag: false, cause: "Mismatched users" };
+        }
+
+
+
         if (info.authType == "User") 
         {   
             const  username = info.username;
@@ -82,17 +94,10 @@ export const verifyAuth = (req, res, info) => {
             }
         }
              
-        if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
-            return { flag: false, cause: "Token is missing information" }
-        }
-        if (!decodedRefreshToken.username || !decodedRefreshToken.email || !decodedRefreshToken.role) {
-            return { flag: false, cause: "Token is missing information" }
-        }
-        if (decodedAccessToken.username !== decodedRefreshToken.username || decodedAccessToken.email !== decodedRefreshToken.email || decodedAccessToken.role !== decodedRefreshToken.role) {
-            return { flag: false, cause: "Mismatched users" };
-        }
+        
         return { flag: true, cause: "authorized" }
     } catch (err) {
+        console.log(err.name)
         if (err.name === "TokenExpiredError") {
             try {
                 const refreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY)
@@ -108,11 +113,11 @@ export const verifyAuth = (req, res, info) => {
                 if (info.authType == "User")     //case of access token expired
                 {   
                         const username = info.username;
-                        if( refreshToken.username != currentUser.username)
+                        if( refreshToken.username != username)
                         { 
                             return { flag: false, cause: "Unauthorized" };      
                         }
-                        else if(refreshToken.username == currentUser.username)
+                        else if(refreshToken.username == username)
                         {
                         return { flag: true, cause: "authorized" };
                         }
@@ -141,7 +146,7 @@ export const verifyAuth = (req, res, info) => {
                             return { flag: true, cause: "authorized" };
                         }
                 }           
-                return { flag: true, cause: "flag" }
+                return { flag: true, cause: "authorized" }
             } catch (err) {
                 if (err.name === "TokenExpiredError") {
                     return { flag: false, cause: "Perform login again" }
