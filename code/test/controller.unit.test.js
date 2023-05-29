@@ -32,7 +32,7 @@ describe("createCategory", () => {
         const newCategory = {type: "type1", color: "color1"};
         jest.spyOn(categories, "findOne").mockResolvedValue(null);
         jest.spyOn(categories.prototype, "save").mockResolvedValue(newCategory);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
 
         await createCategory(mockReq, mockRes);
 
@@ -58,7 +58,7 @@ describe("createCategory", () => {
         const newCategory = {type: "type1", color: "color1"};
         jest.spyOn(categories, "findOne").mockResolvedValue("");
         jest.spyOn(categories.prototype, "save").mockResolvedValue(newCategory);
-        verifyAuth.mockReturnValue({authorized : false, cause: "Unauthorized"});
+        verifyAuth.mockReturnValue({flag : false, cause: "Unauthorized"});
         await createCategory(mockReq, mockRes);
 
         expect(categories.prototype.save).not.toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe("createCategory", () => {
         categories.prototype.save.mockImplementation(() => {
             throw new Error("Internal error");
         })
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createCategory(mockReq, mockRes);
 
         expect(categories.prototype.save).toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe("createCategory", () => {
         }
 
         jest.spyOn(categories, "findOne").mockResolvedValue("");
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createCategory(mockReq, mockRes);
 
         expect(categories.prototype.save).not.toHaveBeenCalled();
@@ -118,7 +118,7 @@ describe("createCategory", () => {
         }
 
         jest.spyOn(categories, "findOne").mockResolvedValue("");
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createCategory(mockReq, mockRes);
 
         expect(categories.prototype.save).not.toHaveBeenCalled();
@@ -136,7 +136,7 @@ describe("createCategory", () => {
             }
         }
 
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
         await createCategory(mockReq, mockRes);
 
@@ -170,7 +170,7 @@ describe("getCategories", () => {
         }
 
         jest.spyOn(categories, "find").mockResolvedValue([]);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
 
         await getCategories(mockReq, mockRes);
 
@@ -195,7 +195,7 @@ describe("getCategories", () => {
         const retrievedCategories = [{type: "type1", color: "color1"},
             {type: "type2", color: "color2"}];
         jest.spyOn(categories, "find").mockResolvedValue(retrievedCategories);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
 
         await getCategories(mockReq, mockRes);
 
@@ -217,7 +217,7 @@ describe("getCategories", () => {
             }
         }
 
-        verifyAuth.mockReturnValue({authorized : false, cause: "Unauthorized"});
+        verifyAuth.mockReturnValue({flag : false, cause: "Unauthorized"});
 
         await getCategories(mockReq, mockRes);
 
@@ -241,7 +241,7 @@ describe("getCategories", () => {
         const retrievedCategories = [[{type: "type1", color: "color1"},
             {type: "type2", color: "color2"}]]
         jest.spyOn(categories, "find").mockResolvedValue(retrievedCategories);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         categories.find.mockImplementation(() => {
             throw new Error("Internal error");
         })
@@ -270,7 +270,7 @@ describe("createTransaction", () => {
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({authorized: true});
+        verifyAuth.mockReturnValue({flag: true});
 
         await createTransaction(mockReq, mockRes);
 
@@ -297,7 +297,7 @@ describe("createTransaction", () => {
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({authorized : false, cause: "Unauthorized"});
+        verifyAuth.mockReturnValue({flag : false, cause: "Unauthorized"});
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -321,7 +321,7 @@ describe("createTransaction", () => {
         transactions.prototype.save.mockImplementation(() => {
             throw new Error("Internal error");
         })
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createTransaction(mockReq, mockRes);
 
         expect(User.findOne).toHaveBeenCalled();
@@ -346,7 +346,7 @@ describe("createTransaction", () => {
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -369,7 +369,7 @@ describe("createTransaction", () => {
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -392,7 +392,7 @@ describe("createTransaction", () => {
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -416,7 +416,7 @@ describe("createTransaction", () => {
             .mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -440,7 +440,7 @@ describe("createTransaction", () => {
             .mockResolvedValue("");
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -464,7 +464,7 @@ describe("createTransaction", () => {
             .mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -487,7 +487,7 @@ describe("createTransaction", () => {
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue("");
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -508,7 +508,7 @@ describe("getAllTransactions", () => {
         }
 
         jest.spyOn(transactions, "aggregate").mockResolvedValue([]);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
 
         await getAllTransactions(mockReq, mockRes);
 
@@ -536,7 +536,7 @@ describe("getAllTransactions", () => {
             {username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
         jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
 
         await getAllTransactions(mockReq, mockRes);
 
@@ -565,7 +565,7 @@ describe("getAllTransactions", () => {
             {username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
         jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({authorized : false, cause: "Unauthorized"});
+        verifyAuth.mockReturnValue({flag : false, cause: "Unauthorized"});
 
         await getCategories(mockReq, mockRes);
 
@@ -592,7 +592,7 @@ describe("getAllTransactions", () => {
             {username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
         jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({authorized : true});
+        verifyAuth.mockReturnValue({flag : true});
         transactions.aggregate.mockImplementation(() => {
             throw new Error("Internal error");
         })
@@ -637,7 +637,7 @@ describe("getTransactionsByGroup", () => {
                 {email: "test3@test.com"}]});
         jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test2", email: "test2@test.com", role: "User"});
-        verifyAuth.mockReturnValue({authorized: true});
+        verifyAuth.mockReturnValue({flag: true});
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -679,7 +679,7 @@ describe("getTransactionsByGroup", () => {
             .mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test2", email: "test2@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({authorized: true});
+        verifyAuth.mockReturnValue({flag: true});
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -714,7 +714,7 @@ describe("getTransactionsByGroup", () => {
                 {email: "test3@test.com"}]});
         jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test2", email: "test2@test.com", role: "User"});
-        verifyAuth.mockReturnValue({authorized: true});
+        verifyAuth.mockReturnValue({flag: true});
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -756,7 +756,7 @@ describe("getTransactionsByGroup", () => {
             .mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test2", email: "test2@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({authorized: true});
+        verifyAuth.mockReturnValue({flag: true});
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -800,7 +800,7 @@ describe("getTransactionsByGroup", () => {
             .mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test2", email: "test2@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({authorized: false, cause: "Unauthorized"});
+        verifyAuth.mockReturnValue({flag: false, cause: "Unauthorized"});
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -837,7 +837,7 @@ describe("getTransactionsByGroup", () => {
             .mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test2", email: "test2@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({authorized: false, cause: "Unauthorized"});
+        verifyAuth.mockReturnValue({flag: false, cause: "Unauthorized"});
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -873,7 +873,7 @@ describe("getTransactionsByGroup", () => {
             .mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test2", email: "test2@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({authorized: true});
+        verifyAuth.mockReturnValue({flag: true});
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -909,7 +909,7 @@ describe("getTransactionsByGroup", () => {
             .mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test2", email: "test2@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({authorized: true});
+        verifyAuth.mockReturnValue({flag: true});
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -948,7 +948,7 @@ describe("getTransactionsByGroup", () => {
         transactions.aggregate.mockImplementation(() => {
             throw new Error("Internal error");
         })
-        verifyAuth.mockReturnValue({authorized: true});
+        verifyAuth.mockReturnValue({flag: true});
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -987,7 +987,7 @@ describe("getTransactionsByGroup", () => {
         transactions.aggregate.mockImplementation(() => {
             throw new Error("Internal error");
         })
-        verifyAuth.mockReturnValue({authorized: true});
+        verifyAuth.mockReturnValue({flag: true});
 
         await getTransactionsByGroup(mockReq, mockRes);
 

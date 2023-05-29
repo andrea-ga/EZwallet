@@ -10,7 +10,7 @@ import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./
 export const createCategory = async (req, res) => {
     try {
         const adminAuth = verifyAuth(req, res, {authType: "Admin"});
-        if (!adminAuth.authorized)
+        if (!adminAuth.flag)
             return res.status(401).json({ error: adminAuth.cause});
 
         const { type, color } = req.body;
@@ -110,7 +110,7 @@ export const createCategory = async (req, res) => {
 export const getCategories = async (req, res) => {
     try {
         const simpleAuth = verifyAuth(req, res, {authType: "Simple"});
-        if (!simpleAuth.authorized)
+        if (!simpleAuth.flag)
             return res.status(401).json({ error: simpleAuth.cause});
 
         const data = await categories.find({});
@@ -135,7 +135,7 @@ export const getCategories = async (req, res) => {
 export const createTransaction = async (req, res) => {
     try {
         const userAuth= verifyAuth(req, res, { authType: "User", username: req.params.username });
-        if (!userAuth.authorized)
+        if (!userAuth.flag)
             return res.status(401).json({error: userAuth.cause});
 
         const param_user = await User.findOne({username: req.params.username});
@@ -180,7 +180,7 @@ export const createTransaction = async (req, res) => {
 export const getAllTransactions = async (req, res) => {
     try {
         const adminAuth = verifyAuth(req, res, { authType: "Admin" });
-        if (!adminAuth.authorized)
+        if (!adminAuth.flag)
             return res.status(401).json({ error: adminAuth.cause});
 
         const result = await transactions.aggregate([
@@ -312,7 +312,7 @@ export const getTransactionsByGroup = async (req, res) => {
         const regExp = new RegExp("/transactions/*"); //Admin-only route
         if(regExp.test(req.url)) {
             const adminAuth = verifyAuth(req, res, {authType: "Admin"})
-            if (!adminAuth.authorized)
+            if (!adminAuth.flag)
                 return res.status(401).json({error : adminAuth.cause});
 
             const group = await Group.findOne({name: name});
@@ -327,7 +327,7 @@ export const getTransactionsByGroup = async (req, res) => {
                 return res.status(400).json({error: "Group not found"});
 
             const groupAuth = verifyAuth(req, res, {authType: "Group", emails: group.members});
-            if (!groupAuth.authorized)
+            if (!groupAuth.flag)
                 return res.status(401).json({error: groupAuth.cause});
 
             for(const m of group.members)
