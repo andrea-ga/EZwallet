@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../app';
 import { categories, transactions } from '../models/model';
 import { User } from "../models/User.js";
-import { createCategory, getCategories, createTransaction } from "../controllers/controller.js";
+import { createCategory, getCategories, createTransaction, getAllTransactions } from "../controllers/controller.js";
 import { verifyAuth } from "../controllers/utils.js";
 
 jest.mock('../models/model');
@@ -495,9 +495,112 @@ describe("createTransaction", () => {
     });
 })
 
-describe("getAllTransactions", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+describe("getAllTransactions", () => {
+    test('should return empty list if there are no transactions', async () => {
+        const mockReq = {};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        jest.spyOn(transactions, "aggregate").mockResolvedValue([]);
+        verifyAuth.mockReturnValue({authorized : true});
+
+        await getAllTransactions(mockReq, mockRes);
+
+        expect(transactions.aggregate).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            data: [],
+            refreshedTokenMessage: mockRes.locals.refreshedTokenMessage
+        });
+    });
+
+    test('should retrieve list of all transactions', async () => {
+        const mockReq = {};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        const retrievedTransactions = [
+            {username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}},
+            {username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type2", color: "color2"}}];
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValue({authorized : true});
+
+        await getAllTransactions(mockReq, mockRes);
+
+        expect(transactions.aggregate).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            data: [{username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+                {username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z", color: "color2"}],
+            refreshedTokenMessage: mockRes.locals.refreshedTokenMessage
+        });
+    });
+
+    test('Unauthorized access', async () => {
+        const mockReq = {};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        const retrievedTransactions = [
+            {username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}},
+            {username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type2", color: "color2"}}];
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValue({authorized : false, cause: "Unauthorized"});
+
+        await getCategories(mockReq, mockRes);
+
+        expect(transactions.aggregate).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "Unauthorized"
+        });
+    });
+
+    test('raise exception', async () => {
+        const mockReq = {};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        const retrievedTransactions = [
+            {username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}},
+            {username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type2", color: "color2"}}];
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValue({authorized : true});
+        transactions.aggregate.mockImplementation(() => {
+            throw new Error("Internal error");
+        })
+
+        await getAllTransactions(mockReq, mockRes);
+
+        expect(transactions.aggregate).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(500);
+        expect(mockRes.json).toHaveBeenCalledWith({error: "Internal error"});
     });
 })
 

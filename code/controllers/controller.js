@@ -179,12 +179,11 @@ export const createTransaction = async (req, res) => {
  */
 export const getAllTransactions = async (req, res) => {
     try {
-        const cookie = req.cookies
-        if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
-        /**
-         * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
-         */
-        transactions.aggregate([
+        const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+        if (!adminAuth.authorized)
+            return res.status(401).json({ error: adminAuth.cause});
+
+        const result = await transactions.aggregate([
             {
                 $lookup: {
                     from: "categories",
@@ -194,12 +193,13 @@ export const getAllTransactions = async (req, res) => {
                 }
             },
             { $unwind: "$categories_info" }
-        ]).then((result) => {
-            let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }))
-            res.json(data);
-        }).catch(error => { throw (error) })
+        ]);
+
+        const data = result.map(v => Object.assign({}, { _id: v._id, username: v.username,
+                amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
+        return res.status(200).json({data: data, refreshedTokenMessage: res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 
