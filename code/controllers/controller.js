@@ -134,16 +134,39 @@ export const getCategories = async (req, res) => {
  */
 export const createTransaction = async (req, res) => {
     try {
-        const cookie = req.cookies
-        const currentUser= await User.findOne({ "username" : req.params.username }); 
-        if (!verifyAuth(req, res, { authType: "User", currentUser : currentUser })) return res.status(400).json("Unauthorized");
+        const userAuth= verifyAuth(req, res, { authType: "User", username: req.params.username });
+        if (!userAuth.authorized)
+            return res.status(401).json({error: userAuth.cause});
+
+        const param_user = await User.findOne({username: req.params.username});
+        if(!param_user)
+            return res.status(400).json({error: "route param user does not exist"});
+
         const { username, amount, type } = req.body;
+        if(!username)
+            return res.status(400).json({error: "username field is empty"});
+        if(!type)
+            return res.status(400).json({error: "type field is empty"});
+        if(isNaN(amount))
+            return res.status(400).json({error: "amount field is not a number"});
+
+        const user = await User.findOne({username: username});
+        if(!user)
+            return res.status(400).json({error: "req body user does not exist"});
+
+        if(username !== param_user.username)
+            return res.status(400).json({error: "req body user and route param user don't match"});
+
+        const category = await categories.findOne({type: type});
+        if(!category)
+            return res.status(400).json({error: "category does not exist"});
+
         const new_transactions = new transactions({ username, amount, type });
-        new_transactions.save()
-            .then(data => res.json({data :data}))
-            .catch(err => { throw err })
+
+        const data = await new_transactions.save();
+        return res.status(200).json({data : data , refreshedTokenMessage : res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 
