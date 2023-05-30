@@ -7,18 +7,28 @@ import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./
   - Request Body Content: An object having attributes `type` and `color`
   - Response `data` Content: An object having attributes `type` and `color`
  */
-export const createCategory = (req, res) => {
+export const createCategory = async (req, res) => {
     try {
-    
-      const adminAuth = verifyAuth(req, res, {authType: "Admin"})
-       if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+        const adminAuth = verifyAuth(req, res, {authType: "Admin"});
+        if (!adminAuth.flag)
+            return res.status(401).json({ error: adminAuth.cause});
+
         const { type, color } = req.body;
-        const new_categories = new categories({ type, color });
-        new_categories.save()
-            .then(data => res.json({data : data, message : res.locals.message}))  //res.locals.message
-            .catch(err => { throw err })
+        if(!type)
+            return res.status(400).json({ error: "type field is empty"});
+        if(!color)
+            return res.status(400).json({ error: "color field is empty"});
+
+        const found = await categories.findOne({type : type});
+        if(found)
+            return res.status(400).json({ error: "type already present"});
+
+        const new_categories = new categories({type, color});
+        const data = await new_categories.save();
+
+        return res.status(200).json({data: {type: data.type, color: data.color}, refreshedTokenMessage: res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 
@@ -106,18 +116,19 @@ export const createCategory = (req, res) => {
  */
 export const getCategories = async (req, res) => {
     try {
-      
         const simpleAuth = verifyAuth(req, res, {authType: "Simple"});
-        if (!simpleAuth.flag) return res.status(401).json({ error: simpleAuth.cause});  //check the NUMBER
+        if (!simpleAuth.flag)
+            return res.status(401).json({ error: simpleAuth.cause});
 
-        let data = await categories.find({})
+        const data = await categories.find({});
 
         let filter = [];
-        if (data)filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }))
+        if (data)
+            filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }));
 
-        return res.json({data: filter ,message : res.locals.message})
+        return res.status(200).json({data: filter , refreshedTokenMessage : res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 
@@ -130,17 +141,39 @@ export const getCategories = async (req, res) => {
  */
 export const createTransaction = async (req, res) => {
     try {
-      
-      const userAuth=verifyAuth(req, res, { authType: "User", username: req.params.username })
-      if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
+        const userAuth= verifyAuth(req, res, { authType: "User", username: req.params.username });
+        if (!userAuth.flag)
+            return res.status(401).json({error: userAuth.cause});
+
+        const param_user = await User.findOne({username: req.params.username});
+        if(!param_user)
+            return res.status(400).json({error: "route param user does not exist"});
 
         const { username, amount, type } = req.body;
+        if(!username)
+            return res.status(400).json({error: "username field is empty"});
+        if(!type)
+            return res.status(400).json({error: "type field is empty"});
+        if(isNaN(amount))
+            return res.status(400).json({error: "amount field is not a number"});
+
+        const user = await User.findOne({username: username});
+        if(!user)
+            return res.status(400).json({error: "req body user does not exist"});
+
+        if(username !== param_user.username)
+            return res.status(400).json({error: "req body user and route param user don't match"});
+
+        const category = await categories.findOne({type: type});
+        if(!category)
+            return res.status(400).json({error: "category does not exist"});
+
         const new_transactions = new transactions({ username, amount, type });
-        new_transactions.save()
-            .then(data => res.json({data :data , message : res.locals.message}))
-            .catch(err => { throw err })
+
+        const data = await new_transactions.save();
+        return res.status(200).json({data : data , refreshedTokenMessage : res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 
@@ -153,13 +186,11 @@ export const createTransaction = async (req, res) => {
  */
 export const getAllTransactions = async (req, res) => {
     try {
-        const adminAuth = verifyAuth(req, res, {authType: "Admin"})
-        if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+        const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+        if (!adminAuth.flag)
+            return res.status(401).json({ error: adminAuth.cause});
 
-        /**
-         * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
-         */
-        transactions.aggregate([
+        const result = await transactions.aggregate([
             {
                 $lookup: {
                     from: "categories",
@@ -169,12 +200,13 @@ export const getAllTransactions = async (req, res) => {
                 }
             },
             { $unwind: "$categories_info" }
-        ]).then((result) => {
-            let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }))
-            res.json({data : data , message : res.locals.message});
-        }).catch(error => { throw (error) })
+        ]);
+
+        const data = result.map(v => Object.assign({}, { _id: v._id, username: v.username,
+                amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
+        return res.status(200).json({data: data, refreshedTokenMessage: res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 
@@ -267,11 +299,32 @@ export const getAllTransactions = async (req, res) => {
 export const getTransactionsByGroup = async (req, res) => {
     try {
         const name = req.params.name;
+        const emails = [];
 
-        const group = await Group.findOne({name : name});
+        const regExp = new RegExp("/transactions/*"); //Admin-only route
+        if(regExp.test(req.url)) {
+            const adminAuth = verifyAuth(req, res, {authType: "Admin"})
+            if (!adminAuth.flag)
+                return res.status(401).json({error : adminAuth.cause});
 
-        if(!group)
-            return res.status(401).json({message : "Group not found"});
+            const group = await Group.findOne({name: name});
+            if (!group)
+                return res.status(400).json({error: "Group not found"});
+
+            for(const m of group.members)
+                emails.push(m.email);
+        } else {
+            const group = await Group.findOne({name: name});
+            if (!group)
+                return res.status(400).json({error: "Group not found"});
+
+            const groupAuth = verifyAuth(req, res, {authType: "Group", emails: group.members});
+            if (!groupAuth.flag)
+                return res.status(401).json({error: groupAuth.cause});
+
+            for(const m of group.members)
+                emails.push(m.email);
+        }
 
         const groupT = [];
 
@@ -287,12 +340,8 @@ export const getTransactionsByGroup = async (req, res) => {
             { $unwind: "$categories_info" }
         ]);
 
-        let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
-
-        const emails = [];
-
-        for(const m of group.members)
-            emails.push(m.email);
+        const data = result.map(v => Object.assign({}, {username: v.username, amount: v.amount,
+            type: v.type, color: v.categories_info.color, date: v.date }));
 
         async function check() {
             for (const t of data) {
@@ -305,9 +354,9 @@ export const getTransactionsByGroup = async (req, res) => {
 
         await check();
 
-        res.status(200).json({data : groupT});
+        return res.status(200).json({data : groupT, refreshedTokenMessage : res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message });
     }
 }
 

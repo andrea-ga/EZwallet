@@ -8,7 +8,37 @@ import jwt from 'jsonwebtoken'
  * @throws an error if the query parameters include `date` together with at least one of `from` or `upTo`
  */
 export const handleDateFilterParams = (req) => {
+    const query = req.query;
 
+    const date_regExp = new RegExp("[0-9]{4}\-[0-9]{2}\-[0-9]{2}");
+    const d = {};
+
+    if(query["from"]) {
+        if(!date_regExp.test(query["from"]))
+            throw new Error("wrong date format");
+
+        d.$gte = query.from + "T00:00:00.000Z";
+    }
+
+    if(query["upTo"]) {
+        if(!date_regExp.test(query["upTo"]))
+            throw new Error("wrong date format");
+
+        d.$lte = query["upTo"] + "T23:59:59.000Z";
+    }
+
+    if(query["date"]) {
+        if(query.from || query["upTo"])
+            throw new Error("wrong query format");
+
+        if(!date_regExp.test(query["date"]))
+            throw new Error("wrong date format");
+
+        d.$gte = query["date"] + "T00:00:00.000Z";
+        d.$lte = query["date"] + "T23:59:59.000Z";
+    }
+
+    return {date: d};
 }
 
 /**
@@ -167,4 +197,23 @@ export const verifyAuth = (req, res, info) => {
  *  Example: {amount: {$gte: 100}} returns all transactions whose `amount` parameter is greater or equal than 100
  */
 export const handleAmountFilterParams = (req) => {
+    const query = req.query;
+
+    const a = {};
+
+    if(query["min"]) {
+        if(isNaN(query["min"]))
+            throw new Error("the min amount value is not a number");
+
+        a.$gte = query["min"];
+    }
+
+    if(query["max"]) {
+        if(isNaN(query["max"]))
+            throw new Error("the max amount value is not a number");
+
+        a.$lte = query["max"];
+    }
+
+    return a;
 }
