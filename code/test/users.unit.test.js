@@ -44,7 +44,7 @@ describe("getUsers", () => {
     }
     jest.spyOn(User, "find").mockResolvedValue([])
     //User.find.mockResolvedValue([])
-    verifyAuth.mockReturnValue({authorized : true})
+    verifyAuth.mockReturnValue({flag : true})
     await getUsers(mockReq, mockRes)
     expect(User.find).toHaveBeenCalled()
     expect(mockRes.status).toHaveBeenCalledWith(200)
@@ -61,7 +61,7 @@ describe("getUsers", () => {
                }
       }
     const retrievedUsers = [{ username: 'test1', email: 'test1@example.com', role : 'Admin' }, { username: 'test2', email: 'test2@example.com', role : 'Admin' }]
-    verifyAuth.mockReturnValue({authorized : true})
+    verifyAuth.mockReturnValue({flag : true})
     //jest.spyOn(User, "find").mockResolvedValue(retrievedUsers)
     User.find.mockResolvedValue(retrievedUsers)
     await getUsers(mockReq, mockRes)
@@ -80,7 +80,7 @@ describe("getUsers", () => {
                }
       }
       
-    verifyAuth.mockReturnValue({authorized : false, cause : "Unauthorized"})
+    verifyAuth.mockReturnValue({flag : false, cause : "Unauthorized"})
     await getUsers(mockReq, mockRes)
     expect(mockRes.status).toHaveBeenCalledWith(401)
     expect(User.find).not.toHaveBeenCalled()
@@ -99,7 +99,7 @@ describe("getUsers", () => {
                }
       }
       const retrievedUsers = [{ username: 'test1', email: 'test1@example.com', role : 'Admin' }, { username: 'test2', email: 'test2@example.com', role : 'Admin' }]
-      verifyAuth.mockReturnValueOnce({authorized : true }) //admin auth
+      verifyAuth.mockReturnValueOnce({flag : true }) //admin auth
     User.find.mockImplementation(() => {
       throw new Error("Internal error");
     })
@@ -128,7 +128,7 @@ describe("getUser", () => {
                }
       }
     const retrievedUser = { username: mockReq.params.username, email: 'test1@example.com', role : 'Regular' }
-    verifyAuth.mockReturnValueOnce({authorized : false}).mockReturnValueOnce({authorized : true}) //admin auth
+    verifyAuth.mockReturnValueOnce({flag : false}).mockReturnValueOnce({flag : true}) //admin auth
     //the first one is for the user/ the second one for the admin
     User.findOne.mockResolvedValue(retrievedUser)
     
@@ -136,25 +136,6 @@ describe("getUser", () => {
     //expect(User.findOne).toHaveBeenCalled()
     expect(mockRes.status).toHaveBeenCalledWith(200)
     expect(mockRes.json).toHaveBeenCalledWith({data :retrievedUser, message: mockRes.locals.refreshedTokenMessage})
-  })
-
-  test("Wrong path", async () => {
-    const mockReq = {
-      params :{ username : "" }
-    }
-    const mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      locals: {
-        refreshedTokenMessage: undefined
-               }
-      }
-    //the first one is for the user/ the second one for the admin
-    
-    await getUser(mockReq, mockRes)
-    //expect(User.findOne).toHaveBeenCalled()
-    expect(mockRes.status).toHaveBeenCalledWith(404)
-    expect(mockRes.json).toHaveBeenCalled()
   })
   test("no credential ", async () => {
     const mockReq = {
@@ -168,7 +149,7 @@ describe("getUser", () => {
                }
       }
     const retrievedUser = { username: mockReq.params.username, email: 'test1@example.com', role : 'Regular' }
-    verifyAuth.mockReturnValueOnce({authorized : false }).mockReturnValueOnce({authorized : false , cause : "Unauthorized"}) //admin auth
+    verifyAuth.mockReturnValueOnce({flag : false }).mockReturnValueOnce({flag : false , cause : "Unauthorized"}) //admin auth
     User.findOne.mockResolvedValue(retrievedUser)
     
     await getUser(mockReq, mockRes)
@@ -188,7 +169,7 @@ describe("getUser", () => {
                }
       }
     const retrievedUser = undefined
-    verifyAuth.mockReturnValueOnce({authorized : false }).mockReturnValueOnce({authorized : true , cause : "Unauthorized"}) //admin auth
+    verifyAuth.mockReturnValueOnce({flag : false }).mockReturnValueOnce({flag : true , cause : "Unauthorized"}) //admin auth
     User.findOne.mockResolvedValue(retrievedUser)
     
     await getUser(mockReq, mockRes)
@@ -210,7 +191,7 @@ describe("getUser", () => {
                }
       }
     const retrievedUser = { username: mockReq.params.username, email: 'test1@example.com', role : 'Regular' }
-    verifyAuth.mockReturnValueOnce({authorized : true }) //admin auth
+    verifyAuth.mockReturnValueOnce({flag : true }) //admin auth
     User.findOne.mockResolvedValue(retrievedUser)
     
     await getUser(mockReq, mockRes)
@@ -231,7 +212,7 @@ describe("getUser", () => {
                }
       }
     const retrievedUser = { username: mockReq.params.username, email: 'test1@example.com', role : 'Regular' }
-    verifyAuth.mockReturnValueOnce({authorized : true }) //admin auth
+    verifyAuth.mockReturnValueOnce({flag : true }) //admin auth
     User.findOne.mockImplementation(() => {
       throw new Error("Internal error");
     })
@@ -267,7 +248,7 @@ beforeEach(() => {
       }
     }
     const newGroup = {name : "g1", members : [{email : "ciao@gmail.com"}, {email :"hello@hotmail.com" }]}
-    verifyAuth.mockReturnValue({authorized : true})  
+    verifyAuth.mockReturnValue({flag : true})  
     jest.spyOn(Group.prototype, 'save').mockResolvedValueOnce(newGroup)
     Group.findOne.mockResolvedValueOnce(false) //if group already present
     User.findOne.mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"})
@@ -307,7 +288,7 @@ beforeEach(() => {
       }
     }
     const newGroup = {name : "g1", members : [{email : "ciao@gmail.com"}, {email :"hello@hotmail.com" }]}
-    verifyAuth.mockReturnValueOnce({authorized : true})
+    verifyAuth.mockReturnValueOnce({flag : true})
     jest.spyOn(Group.prototype, "save").mockResolvedValueOnce(newGroup)
     Group.findOne.mockResolvedValueOnce(false) //if group already present
     User.findOne.mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"}) //the user is not already in a group
@@ -353,7 +334,7 @@ beforeEach(() => {
         refreshedTokenMessage: undefined
       }
     }
-    verifyAuth.mockReturnValue({authorized : true})  
+    verifyAuth.mockReturnValue({flag : true})  
     Group.findOne.mockResolvedValueOnce(true) 
     
     await createGroup(mockReq, mockRes)
@@ -380,7 +361,7 @@ beforeEach(() => {
         refreshedTokenMessage: undefined
       }
     }
-    verifyAuth.mockReturnValue({authorized : false , cause : "Unauthorized"})  
+    verifyAuth.mockReturnValue({flag : false , cause : "Unauthorized"})  
     await createGroup(mockReq, mockRes)
 
     expect(mockRes.status).toHaveBeenCalledWith(401)
@@ -402,7 +383,7 @@ beforeEach(() => {
         refreshedTokenMessage: undefined
       }
     }
-    verifyAuth.mockReturnValue({authorized : true})  
+    verifyAuth.mockReturnValue({flag : true})  
     Group.findOne.mockResolvedValueOnce(false) //if group already present
     User.findOne.mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"}) //the user is not already in a group
     //all the mail are correct so pass the validation test
@@ -428,7 +409,7 @@ beforeEach(() => {
         refreshedTokenMessage: undefined
       }
     }
-    verifyAuth.mockReturnValue({authorized : true})  
+    verifyAuth.mockReturnValue({flag : true})  
    await createGroup(mockReq, mockRes)
 
     expect(mockRes.status).toHaveBeenCalledWith(400)
@@ -450,7 +431,7 @@ beforeEach(() => {
         refreshedTokenMessage: undefined
       }
     }
-    verifyAuth.mockReturnValue({authorized : true})  
+    verifyAuth.mockReturnValue({flag : true})  
     Group.findOne.mockResolvedValueOnce(false) //if group already present
     User.findOne.mockResolvedValueOnce({username : "hello" , email : "hello@hotmail.com"}) //the user is not already in a group
     //all the mail are correct so pass the validation test
@@ -481,7 +462,7 @@ describe("getGroups", () => {
                }
       }
     const retrievedGroup = [{ name : "g1 ", members : ["t1@t1.com", "t2@t2.com"] }]
-    verifyAuth.mockReturnValue({authorized : true})
+    verifyAuth.mockReturnValue({flag : true})
     //the first one is for the user/ the second one for the admin
     Group.find.mockResolvedValue(retrievedGroup)
     
@@ -501,7 +482,7 @@ describe("getGroups", () => {
         refreshedTokenMessage: undefined
                }
       }
-    verifyAuth.mockReturnValue({authorized : false , cause : "Unauthorized"})
+    verifyAuth.mockReturnValue({flag : false , cause : "Unauthorized"})
     //the first one is for the user/ the second one for the admin
     
     await getGroups(mockReq, mockRes)
@@ -520,7 +501,7 @@ describe("getGroups", () => {
         refreshedTokenMessage: undefined
                }
       }
-    verifyAuth.mockReturnValue({authorized : true})
+    verifyAuth.mockReturnValue({flag : true})
     //the first one is for the user/ the second one for the admin
     Group.find.mockResolvedValue([])
     
@@ -541,7 +522,7 @@ describe("getGroups", () => {
                }
       }
     const retrievedGroup = [{ name : "g1 ", members : ["t1@t1.com", "t2@t2.com"] }]
-    verifyAuth.mockReturnValue({authorized : true})
+    verifyAuth.mockReturnValue({flag : true})
     //the first one is for the user/ the second one for the admin
     Group.find.mockResolvedValue(retrievedGroup)
     
@@ -561,7 +542,7 @@ describe("getGroups", () => {
         refreshedTokenMessage: undefined
                }
       }
-    verifyAuth.mockReturnValueOnce({authorized : true }) //admin auth
+    verifyAuth.mockReturnValueOnce({flag : true }) //admin auth
     Group.find.mockImplementation(() => {
       throw new Error("Internal error");
     })
@@ -590,7 +571,7 @@ describe("getGroup", () => {
                }
       }
     const retrievedGroup = { name : "g1 ", members : ["t1@t1.com", "t2@t2.com"] }
-    verifyAuth.mockReturnValueOnce({authorized : true}).mockReturnValueOnce({authorized : true})
+    verifyAuth.mockReturnValueOnce({flag : true}).mockReturnValueOnce({flag : true})
     Group.findOne.mockResolvedValue(retrievedGroup)
     
     await getGroup(mockReq, mockRes)
@@ -611,7 +592,7 @@ describe("getGroup", () => {
                }
       }
     const retrievedGroup = {}
-    verifyAuth.mockReturnValueOnce({authorized : false , cause : "Unauthorized"})
+    verifyAuth.mockReturnValueOnce({flag : false , cause : "Unauthorized"})
     Group.findOne.mockResolvedValue(retrievedGroup)
     
     await getGroup(mockReq, mockRes)
@@ -632,7 +613,7 @@ describe("getGroup", () => {
                }
       }
     const retrievedGroup = [{ name : "g1 ", members : ["t1@t1.com", "t2@t2.com"] }]
-    verifyAuth.mockReturnValueOnce({authorized : true}).mockReturnValueOnce({authorized : false}).mockReturnValueOnce({authorized : true})
+    verifyAuth.mockReturnValueOnce({flag : true}).mockReturnValueOnce({flag : false}).mockReturnValueOnce({flag : true})
     Group.findOne.mockResolvedValue(retrievedGroup)
     
     await getGroup(mockReq, mockRes)
@@ -652,7 +633,7 @@ describe("getGroup", () => {
                }
       }
     const retrievedGroup = [{ name : "g1 ", members : ["t1@t1.com", "t2@t2.com"] }]
-    verifyAuth.mockReturnValueOnce({authorized : true}).mockReturnValueOnce({authorized : false}).mockReturnValueOnce({authorized : false , cause : "Unauthorized"})
+    verifyAuth.mockReturnValueOnce({flag : true}).mockReturnValueOnce({flag : false}).mockReturnValueOnce({flag : false , cause : "Unauthorized"})
     Group.findOne.mockResolvedValue(retrievedGroup)
     
     await getGroup(mockReq, mockRes)
@@ -672,7 +653,7 @@ describe("getGroup", () => {
                }
       }
     const rievedGroup = [{ name : "g1 ", members : ["t1@t1.com", "t2@t2.com"] }]
-    verifyAuth.mockReturnValueOnce({authorized : true}).mockReturnValueOnce({authorized : true})
+    verifyAuth.mockReturnValueOnce({flag : true}).mockReturnValueOnce({flag : true})
     Group.findOne.mockResolvedValue(undefined)
     
     await getGroup(mockReq, mockRes)
@@ -691,7 +672,7 @@ describe("getGroup", () => {
         refreshedTokenMessage: undefined
                }
       }
-    verifyAuth.mockReturnValueOnce({authorized : true}).mockReturnValueOnce({authorized : false})
+    verifyAuth.mockReturnValueOnce({flag : true}).mockReturnValueOnce({flag : false})
 
     Group.findOne.mockResolvedValue(undefined)
     
@@ -710,7 +691,7 @@ describe("getGroup", () => {
         refreshedTokenMessage: undefined
                }
       }
-    verifyAuth.mockReturnValueOnce({authorized : false})
+    verifyAuth.mockReturnValueOnce({flag : false})
     Group.findOne.mockImplementation(() => {
       throw new Error("Internal error");
     })
@@ -719,23 +700,6 @@ describe("getGroup", () => {
     expect(mockRes.status).toHaveBeenCalledWith(500)
     expect(mockRes.json).toHaveBeenCalled()
   })
-  test("invalid params ", async () => {
-    const mockReq = {
-      params :{  name : ""} 
-    }
-    const mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      locals: {
-        refreshedTokenMessage: undefined
-               }
-      }
-     
-    await getGroup(mockReq, mockRes)
-    expect(mockRes.status).toHaveBeenCalledWith(404)
-    expect(mockRes.json).toHaveBeenCalled()
-  })
-
     
 })
 
@@ -760,7 +724,7 @@ test("Group not found", async () => {
     }
     
     Group.findOne.mockResolvedValueOnce(false)
-    verifyAuth.mockReturnValueOnce({authorized : true})
+    verifyAuth.mockReturnValueOnce({flag : true})
     await addToGroup(mockReq, mockRes)
     expect(Group.findOne).toHaveBeenCalled()
     expect(mockRes.status).toHaveBeenCalledWith(400)
@@ -782,7 +746,7 @@ test("admin request", async () => {
       refreshedTokenMessage: undefined
              }
     }
-  verifyAuth.mockReturnValueOnce({authorized : true})
+  verifyAuth.mockReturnValueOnce({flag : true})
   Group.findOne.mockResolvedValueOnce(true)
   User.findOne.mockResolvedValue(true).mockResolvedValueOnce(true)
   Group.findOne.mockResolvedValue(false)
@@ -807,7 +771,7 @@ test("admin request with wrong email format", async () => {
       refreshedTokenMessage: undefined
              }
     }
-  verifyAuth.mockReturnValueOnce({authorized : true})
+  verifyAuth.mockReturnValueOnce({flag : true})
   Group.findOne.mockResolvedValueOnce(true)
  
   await addToGroup(mockReq, mockRes)
@@ -830,7 +794,7 @@ test("user request, all ok", async () => {
       refreshedTokenMessage: undefined
              }
     }
-  verifyAuth.mockReturnValueOnce({authorized : false}).mockReturnValueOnce({authorized : true})//user
+  verifyAuth.mockReturnValueOnce({flag : false}).mockReturnValueOnce({flag : true})//user
   Group.findOne.mockResolvedValueOnce({"name" : "g1", members : ["us@03.com"]})//group found
   User.findOne.mockResolvedValue(true).mockResolvedValueOnce(true)
   Group.findOne.mockResolvedValue(false)
@@ -855,7 +819,7 @@ test("user request not authorized", async () => {
       refreshedTokenMessage: undefined
              }
     }
-  verifyAuth.mockReturnValueOnce({authorized : false}).mockReturnValueOnce({authorized : false, cause : "Unauthorized"})//user
+  verifyAuth.mockReturnValueOnce({flag : false}).mockReturnValueOnce({flag : false, cause : "Unauthorized"})//user
   Group.findOne.mockResolvedValueOnce({"name" : "g1", members : ["us@03.com"]})//group found
 
   await addToGroup(mockReq, mockRes)
@@ -878,7 +842,7 @@ test("user request group not found", async () => {
       refreshedTokenMessage: undefined
              }
     }
-  verifyAuth.mockReturnValueOnce({authorized : false}).mockReturnValueOnce({authorized : false, cause : "Unauthorized"})//user
+  verifyAuth.mockReturnValueOnce({flag : false}).mockReturnValueOnce({flag : false, cause : "Unauthorized"})//user
   Group.findOne.mockResolvedValueOnce(false)//group found
 
   await addToGroup(mockReq, mockRes)
@@ -901,7 +865,7 @@ test("user request, all ok", async () => {
       refreshedTokenMessage: undefined
              }
     }
-  verifyAuth.mockReturnValueOnce({authorized : false}).mockReturnValueOnce({authorized : true})//user
+  verifyAuth.mockReturnValueOnce({flag : false}).mockReturnValueOnce({flag : true})//user
   Group.findOne.mockResolvedValueOnce({"name" : "g1", members : ["us@03.com"]})//group found
   User.findOne.mockResolvedValue(false).mockResolvedValueOnce(true)
   Group.findOne.mockResolvedValue(true)
@@ -928,7 +892,7 @@ test("Bad request", async () => {
   }
   
   Group.findOne.mockResolvedValueOnce(true)
-  verifyAuth.mockReturnValueOnce({authorized : true})
+  verifyAuth.mockReturnValueOnce({flag : true})
   await addToGroup(mockReq, mockRes)
   expect(mockRes.status).toHaveBeenCalledWith(400)
   expect(mockRes.json).toHaveBeenCalledWith({error : "Bad request"})
@@ -951,7 +915,7 @@ test("User access with admin path", async () => {
   }
   
 
-  verifyAuth.mockReturnValueOnce({authorized : false})
+  verifyAuth.mockReturnValueOnce({flag : false})
   await addToGroup(mockReq, mockRes)
   expect(mockRes.status).toHaveBeenCalledWith(401)
   expect(mockRes.json).toHaveBeenCalledWith({error : "Unauthorized"})
@@ -981,7 +945,7 @@ test("Admin request but group has only one user", async () => {
     }
     
     Group.findOne.mockResolvedValueOnce({name : "g1" , members :[{email : "us@01.com"}]})
-    verifyAuth.mockReturnValueOnce({authorized : true})//admin
+    verifyAuth.mockReturnValueOnce({flag : true})//admin
 
     await removeFromGroup(mockReq, mockRes)
 
@@ -1007,7 +971,7 @@ test("Admin request but wrong email format", async () => {
   }
   
   Group.findOne.mockResolvedValueOnce({name : "g1" , members : [{email : "us@01.com"},{email : "us@02.com"}]})
-  verifyAuth.mockReturnValueOnce({authorized : true})//admin
+  verifyAuth.mockReturnValueOnce({flag : true})//admin
 
   await removeFromGroup(mockReq, mockRes)
 
@@ -1033,7 +997,7 @@ test("Admin request", async () => {
   }
   
   Group.findOne.mockResolvedValueOnce({name : "g1" , members : [{email : "us@01.com"},{email : "us@02.com"}]})
-  verifyAuth.mockReturnValueOnce({authorized : true})//admin
+  verifyAuth.mockReturnValueOnce({flag : true})//admin
   User.findOne.mockResolvedValue(true)
   Group.replaceOne.mockResolvedValue(true)
   await removeFromGroup(mockReq, mockRes)
@@ -1062,7 +1026,7 @@ test("Admin request try to delete all members", async () => {
   }
   
   Group.findOne.mockResolvedValueOnce({name : "g1" , members : [{email : "us@01.com"},{email : "us@02.com"}]})
-  verifyAuth.mockReturnValueOnce({authorized : true})//admin
+  verifyAuth.mockReturnValueOnce({flag : true})//admin
   User.findOne.mockResolvedValue(true)
   Group.findOne.mockResolvedValue({name : "g1" , members : [{email : "us@01.com"},{email : "us@02.com"}]})
   Group.replaceOne.mockResolvedValueOnce(true)
@@ -1099,7 +1063,7 @@ test("user request with admin path", async () => {
   }
   
   Group.findOne.mockResolvedValueOnce({name : "g1" , members : [{email : "us@01.com"},{email : "us@02.com"}]})
-  verifyAuth.mockReturnValueOnce({authorized : false})//admin
+  verifyAuth.mockReturnValueOnce({flag : false})//admin
   await removeFromGroup(mockReq, mockRes)
 
   expect(Group.findOne).toHaveBeenCalled()
@@ -1124,7 +1088,8 @@ test("Bad request ", async () => {
     }
   }
   
-  verifyAuth.mockReturnValueOnce({authorized : false})//admin
+  verifyAuth.mockReturnValueOnce({flag : true})//admin
+  Group.findOne.mockResolvedValueOnce({name : "g1", members : [{email : "us@01.com"}]})
   await removeFromGroup(mockReq, mockRes)
 
   expect(mockRes.status).toHaveBeenCalledWith(400)
@@ -1148,7 +1113,7 @@ test("user request group not found", async () => {
   }
   
   Group.findOne.mockResolvedValueOnce(false)
-  verifyAuth.mockReturnValueOnce({authorized : false})//admin
+  verifyAuth.mockReturnValueOnce({flag : false})//admin
   await removeFromGroup(mockReq, mockRes)
 
   expect(mockRes.status).toHaveBeenCalledWith(400)
@@ -1172,8 +1137,8 @@ test("user request not authorized", async () => {
   }
   
   Group.findOne.mockResolvedValueOnce({name : "g1", members : [{email : "us@01.com"}]})
-  verifyAuth.mockReturnValueOnce({authorized : false})//admin
-  verifyAuth.mockReturnValue({authorized : false , cause : "Unauthorized"})
+  verifyAuth.mockReturnValueOnce({flag : false})//admin
+  verifyAuth.mockReturnValue({flag : false , cause : "Unauthorized"})
   await removeFromGroup(mockReq, mockRes)
 
   expect(mockRes.status).toHaveBeenCalledWith(401)
@@ -1200,7 +1165,7 @@ beforeEach(() => {
       }
     }
     //jest.spyOn(User, "find").mockResolvedValue([])
-    verifyAuth.mockReturnValue({authorized : false , cause : "Unauthorized"})  
+    verifyAuth.mockReturnValue({flag : false , cause : "Unauthorized"})  
     await deleteUser(mockReq, mockRes)
 
     expect(User.findOne).not.toHaveBeenCalled()
@@ -1222,7 +1187,7 @@ test("user not found", async () => {
       }
     }
     //jest.spyOn(User, "find").mockResolvedValue([])
-    verifyAuth.mockReturnValue({authorized : true}) 
+    verifyAuth.mockReturnValue({flag : true}) 
     User.findOne.mockResolvedValue( undefined ); 
 
     await deleteUser(mockReq, mockRes);
@@ -1247,7 +1212,7 @@ test("User successfully deleted and in a group", async () => {
       }
     }
     //jest.spyOn(User, "find").mockResolvedValue([])
-    verifyAuth.mockReturnValue({authorized : true}) 
+    verifyAuth.mockReturnValue({flag : true}) 
     User.findOne.mockResolvedValue( { username: "test" ,
       email: "us@01.com",
       password: "rqgniqrgjnnqremcoeq3901084fvncr893dn9c",
@@ -1287,7 +1252,7 @@ test("User successfully deleted, no in a group", async () => {
       }
     }
     //jest.spyOn(User, "find").mockResolvedValue([])
-    verifyAuth.mockReturnValue({authorized : true}) 
+    verifyAuth.mockReturnValue({flag : true}) 
     User.findOne.mockResolvedValue( { username: "test" ,
       email: "us@01.com",
       password: "rqgniqrgjnnqremcoeq3901084fvncr893dn9c",
@@ -1327,7 +1292,7 @@ test("User successfully deleted, no in a group", async () => {
       }
     }
     //jest.spyOn(User, "find").mockResolvedValue([])
-    verifyAuth.mockReturnValue({authorized : true}) 
+    verifyAuth.mockReturnValue({flag : true}) 
     User.findOne.mockImplementation(() => {   
       throw Error("Error")
     } ); 
@@ -1359,7 +1324,7 @@ describe("deleteGroup", () => {
         refreshedTokenMessage: undefined
       }
     }
-    verifyAuth.mockReturnValue({authorized : false , cause : "Unauthorized"})  
+    verifyAuth.mockReturnValue({flag : false , cause : "Unauthorized"})  
     await deleteGroup(mockReq, mockRes)
 
     expect(mockRes.status).toHaveBeenCalledWith(401)
@@ -1379,7 +1344,7 @@ describe("deleteGroup", () => {
         refreshedTokenMessage: undefined
       }
     }
-    verifyAuth.mockReturnValue({authorized :true})  
+    verifyAuth.mockReturnValue({flag :true})  
     await deleteGroup(mockReq, mockRes)
 
     expect(mockRes.status).toHaveBeenCalledWith(400)
@@ -1399,7 +1364,7 @@ describe("deleteGroup", () => {
         refreshedTokenMessage: undefined
       }
     }
-    verifyAuth.mockReturnValue({authorized :true})  
+    verifyAuth.mockReturnValue({flag :true})  
     Group.findOne.mockResolvedValue(false)
     await deleteGroup(mockReq, mockRes)
 
@@ -1419,7 +1384,7 @@ describe("deleteGroup", () => {
         refreshedTokenMessage: undefined
       }
     }
-    verifyAuth.mockReturnValue({authorized :true})  
+    verifyAuth.mockReturnValue({flag :true})  
     Group.findOne.mockResolvedValue(true)
     Group.deleteOne.mockResolvedValue(true)
     await deleteGroup(mockReq, mockRes)

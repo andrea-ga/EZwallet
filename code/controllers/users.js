@@ -36,9 +36,6 @@ export const getUsers = async (req, res) => {
 export const getUser = async (req, res) => {
   try {
     const username = req.params.username;
-    if (!username || username == "") {
-      res.status(404).json({ error: "Not found" })
-    }
     const userAuth = verifyAuth(req, res, { authType: "User", username: username })
     if (userAuth.flag) //the admin call this method
     {
@@ -183,8 +180,6 @@ export const getGroups = async (req, res) => {
  */
 export const getGroup = async (req, res) => {
   try {
-    if (req.params.name == "")
-      return res.status(404).json({ error: "Not foun" })
     const group = await Group.findOne({ name: req.params.name });
     let simpleAuth = verifyAuth(req, res, { authType: "Simple" }); //if the cookies are valid
     if (!simpleAuth.flag) return res.status(401).json({ error: simpleAuth.cause });
@@ -311,10 +306,7 @@ export const removeFromGroup = async (req, res) => {
     const cookie = req.cookies
 
     const name = req.params.name;
-    const members = req.body.emails;
-    if (!members)  //  || memebers = []
-      return res.status(400).json({ error: "Bad request" });
-
+    
 
     let group = await Group.findOne({ name: req.params.name });
     let adminAuth = verifyAuth(req, res, { authType: "Admin" });
@@ -335,6 +327,10 @@ export const removeFromGroup = async (req, res) => {
     else {
       return res.status(401).json({ error: "Unauthorized" });
     }
+
+    const members = req.body.emails;
+    if (!members)  //  || memebers = []
+      return res.status(400).json({ error: "Bad request" });
 
 
     let membersNotFound = [];
