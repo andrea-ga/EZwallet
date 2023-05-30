@@ -67,7 +67,7 @@ export const handleDateFilterParams = (req) => {
  *  Refreshes the accessToken if it has expired and the refreshToken is still valid
  */
 export const verifyAuth = (req, res, info) => {
-    const cookie = req.cookies
+    const cookie = req.cookies;
     if (!cookie.accessToken || !cookie.refreshToken) {
         return { flag: false, cause: "Unauthorized" };
     }

@@ -25,12 +25,17 @@ afterAll(async () => {
 });
 
 describe('register', () => {
+  test('Dummy test, change it', () => {
+    expect(true).toBe(true);
+});
+
 });
 
 describe("registerAdmin", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
-    });
+  test('Dummy test, change it', () => {
+    expect(true).toBe(true);
+});
+
 })
 
 describe('login', () => { 
