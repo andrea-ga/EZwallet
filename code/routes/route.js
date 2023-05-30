@@ -2,7 +2,7 @@ import { Router } from "express";
 import { login, logout, register, registerAdmin } from "../controllers/auth.js";
 import {
     createCategory, createTransaction, deleteTransaction,
-    getCategories, getAllTransactions, getTransactionsByUser, deleteCategory,
+    getCategories, getAllTransactions, getTransactionByUser, deleteCategory,
     getTransactionsByUserByCategory, deleteTransactions, getTransactionsByGroup, getTransactionsByGroupByCategory, updateCategory
 } from "../controllers/controller.js";
 import {
@@ -22,10 +22,10 @@ router.post('/login', login)
 /**
  * Routes for authenticated users
  */
-router.get("/categories", getCategories) //auth done
+router.get("/categories", getCategories) 
 router.get("/users/:username", getUser)
 router.post("/users/:username/transactions", createTransaction)
-router.get("/users/:username/transactions", getTransactionsByUser)
+router.get("/users/:username/transactions", getTransactionByUser)
 router.delete("/users/:username/transactions", deleteTransaction)
 router.get("/users/:username/transactions/category/:category", getTransactionsByUserByCategory)
 router.post("/groups", createGroup)
@@ -43,7 +43,7 @@ router.patch("/categories/:type", updateCategory) //auth done
 router.delete("/categories", deleteCategory) //auth done
 router.get("/transactions", getAllTransactions) //auth done
 router.delete("/transactions", deleteTransactions) //auth done
-router.get("/transactions/users/:username", getTransactionsByUser)
+router.get("/transactions/users/:username", getTransactionByUser)
 router.get("/transactions/users/:username/category/:category", getTransactionsByUserByCategory)
 router.get("/transactions/groups/:name", getTransactionsByGroup)
 router.get("/transactions/groups/:name/category/:category", getTransactionsByGroupByCategory)

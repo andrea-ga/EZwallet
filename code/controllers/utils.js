@@ -69,33 +69,45 @@ export const handleDateFilterParams = (req) => {
 export const verifyAuth = (req, res, info) => {
     const cookie = req.cookies
     if (!cookie.accessToken || !cookie.refreshToken) {
-        return { authorized: false, cause: "Unauthorized" };
+        return { flag: false, cause: "Unauthorized" };
     }
     try {
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
         const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
-        
+
+        if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
+            return { flag: false, cause: "Token is missing information" }
+        }
+        if (!decodedRefreshToken.username || !decodedRefreshToken.email || !decodedRefreshToken.role) {
+            return { flag: false, cause: "Token is missing information" }
+        }
+        if (decodedAccessToken.username !== decodedRefreshToken.username || decodedAccessToken.email !== decodedRefreshToken.email || decodedAccessToken.role !== decodedRefreshToken.role) {
+            return { flag: false, cause: "Mismatched users" };
+        }
+
+
+
         if (info.authType == "User") 
         {   
             const  username = info.username;
             if( decodedAccessToken.username != username || decodedRefreshToken.username !=username)
             {                
-                return { authorized: false, cause: "Unauthorized" };
+                return { flag: false, cause: "Unauthorized" };
             }
             else if( decodedAccessToken.username == username && decodedRefreshToken.username == username)
             {
-                return { authorized: true, cause: "Authorized" };
+                return { flag: true, cause: "authorized" };
             }
         }
         else if (info.authType == "Admin")
         {   
             if( decodedAccessToken.role != "Admin" || decodedRefreshToken.role != "Admin")
             {
-                return { authorized: false, cause: "Unauthorized" };
+                return { flag: false, cause: "Unauthorized" };
             }
             else if( decodedAccessToken.role == "Admin" && decodedRefreshToken.role == "Admin")
             {
-                return { authorized: true, cause: "Authorized" };
+                return { flag: true, cause: "authorized" };
             }   
         }
         else if (info.authType == "Group")  
@@ -104,25 +116,18 @@ export const verifyAuth = (req, res, info) => {
             let RTfind = info.emails.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
             if( !ATfind || !RTfind  ) 
             {
-                return { authorized: false, cause: "Unauthorized" }; 
+                return { flag: false, cause: "Unauthorized" }; 
             }
             else if( ATfind  && RTfind )
             {
-                return { authorized: true, cause: "Authorized" };
+                return { flag: true, cause: "authorized" };
             }
         }
              
-        if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
-            return { authorized: false, cause: "Token is missing information" }
-        }
-        if (!decodedRefreshToken.username || !decodedRefreshToken.email || !decodedRefreshToken.role) {
-            return { authorized: false, cause: "Token is missing information" }
-        }
-        if (decodedAccessToken.username !== decodedRefreshToken.username || decodedAccessToken.email !== decodedRefreshToken.email || decodedAccessToken.role !== decodedRefreshToken.role) {
-            return { authorized: false, cause: "Mismatched users" };
-        }
-        return { authorized: true, cause: "Authorized" }
+        
+        return { flag: true, cause: "authorized" }
     } catch (err) {
+        console.log(err.name)
         if (err.name === "TokenExpiredError") {
             try {
                 const refreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY)
@@ -138,24 +143,24 @@ export const verifyAuth = (req, res, info) => {
                 if (info.authType == "User")     //case of access token expired
                 {   
                         const username = info.username;
-                        if( refreshToken.username != currentUser.username)
+                        if( refreshToken.username != username)
                         { 
-                            return { authorized: false, cause: "Unauthorized" };      
+                            return { flag: false, cause: "Unauthorized" };      
                         }
-                        else if(refreshToken.username == currentUser.username)
+                        else if(refreshToken.username == username)
                         {
-                        return { authorized: true, cause: "Authorized" };
+                        return { flag: true, cause: "authorized" };
                         }
                 }
             else if (info.authType == "Admin")
                 { 
                         if( refreshToken.role != "Admin")
                                 { 
-                                    return { authorized: false, cause: "Unauthorized" };
+                                    return { flag: false, cause: "Unauthorized" };
                                 }
                         else if(refreshToken.role == "Admin")
                                 {
-                                   return { authorized: true, cause: "Authorized" };
+                                   return { flag: true, cause: "authorized" };
                                 }
                 }
             else if (info.authType == "Group")  
@@ -164,23 +169,23 @@ export const verifyAuth = (req, res, info) => {
                         let RTfind = info.emails.map((e)=> e.email).find( e => e == refreshToken.email );
                         if(  !RTfind )
                         { 
-                            return { authorized: false, cause: "Unauthorized" };
+                            return { flag: false, cause: "Unauthorized" };
                         }
                         else if( RTfind)
                         {
-                            return { authorized: true, cause: "Authorized" };
+                            return { flag: true, cause: "authorized" };
                         }
                 }           
-                return { authorized: true, cause: "Authorized" }
+                return { flag: true, cause: "authorized" }
             } catch (err) {
                 if (err.name === "TokenExpiredError") {
-                    return { authorized: false, cause: "Perform login again" }
+                    return { flag: false, cause: "Perform login again" }
                 } else {
-                    return { authorized: false, cause: err.name }
+                    return { flag: false, cause: err.name }
                 }
             }
         } else {
-            return { authorized: false, cause: err.name };
+            return { flag: false, cause: err.name };
         }
     }
 }

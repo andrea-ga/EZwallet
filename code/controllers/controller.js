@@ -40,31 +40,31 @@ export const createCategory = async (req, res) => {
     - error 401 returned if the specified category does not exist
     - error 401 is returned if new parameters have invalid values
  */
-    function updateCategoryFunc(categoryName, newCategoryName) {
-        // Find the index of the category with the given name
-        const categoryIndex = ezwallet.categories.findIndex(
-          (category) => category.name === categoryName
-        );
-        // If the category exists, update its name
-        if (categoryIndex !== -1) {
-          ezwallet.categories[categoryIndex].name = newCategoryName;
-          console.log(`Category "${categoryName}" updated to "${newCategoryName}"`);
-        } else {
-          console.log(`Category "${categoryName}" not found`);
-        }
-      }
-      
-      export const updateCategory = async (req, res) => {
+    export const updateCategory = (req, res) => {
         try {
-          if (!verifyAuth(req, res, { authType: "Admin" })) return ;
-          // Call the updateCategory function with the provided parameters
-          updateCategoryFunc(req.params.categoryName, req.body.newCategoryName);
-          res.status(200).json({ message: "Category updated successfully" });
+          const cookie = req.cookies;
+          if (!cookie.accessToken) {
+            return res.status(401).json({ message: "Unauthorized" });
+          }
+      
+          const categoryId = req.params.categoryId;
+          const { newCategoryName } = req.body;
+      
+          // Update the category in the server/database using the categoryId
+          categories.findByIdAndUpdate(categoryId, { name: newCategoryName }, { new: true })
+            .then(updatedCategory => {
+              if (!updatedCategory) {
+                return res.status(404).json({ message: "Category not found" });
+              }
+              res.json(updatedCategory);
+            })
+            .catch(err => {
+              throw err;
+            });
         } catch (error) {
           res.status(400).json({ error: error.message });
         }
       };
- 
 
 /**
  * Delete a category
@@ -73,32 +73,39 @@ export const createCategory = async (req, res) => {
   - Optional behavior:
     - error 401 is returned if the specified category does not exist
  */
-    function deleteCategoryFunc(categoryName) {
-        // Find the index of the category with the given name
-        const categoryIndex = ezwallet.categories.findIndex(
-          (category) => category.name === categoryName
-        );
-        
-        // If the category exists, remove it from the array
-        if (categoryIndex !== -1) {
-          ezwallet.categories.splice(categoryIndex, 1);
-          console.log(`Category "${categoryName}" deleted`);
-        } else {
-          console.log(`Category "${categoryName}" not found`);
-        }
-      }
-      
-      export const deleteCategory = async (req, res) => {
+    export const deleteCategory = async (req, res) => {
         try {
-          if (!verifyAuth(req, res, { authType: "Admin" })) return;
-          // Call the deleteCategory function with the provided parameter
-          deleteCategoryFunc(req.params.categoryName);
-          res.status(200).json({ message: "Category deleted successfully" });
+
+          if (!verifyAuth(req, res, { authType: "Admin" })) return ;
+          // check cookies
+          const cookie = req.cookies;
+          if (!cookie.accessToken) {
+            return res.status(401).json({ message: "Unauthorized" });
+          }
+      
+          // the variable is an array retrieved from the request body
+          const cat = req.body.types;
+
+      
+          // Delete the category from the server/database using the categoryId
+          
+          
+          // find all the categories that have the type given in the req.body.type parameter and delete the category
+          // ---> if only one category per type or per color no foor loop needed. We have to check if color or type attribute are unique as tuple or as individual attribute
+          for (const c of cat){
+            console.log(c);
+            const deleted = await categories.findOneAndDelete({type: c}).then((e) => console.log(e))
+            .catch((error)=> {
+                res.status(400);
+            });
+          }
+
+          res.status(200).json({ message: "Category updated successfully" });
+          
         } catch (error) {
           res.status(400).json({ error: error.message });
         }
       };
-      
 
 /**
  * Return all the categories
@@ -212,33 +219,20 @@ export const getAllTransactions = async (req, res) => {
     - empty array is returned if there are no transactions made by the user
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
-    async function getTransactionByUserFunc(userId) {
+    export const getTransactionByUser = async (req, res) => {
         try {
-          const transactions = await Transaction.find({
-            $or: [{ senderId: userId }, { receiverId: userId }],
-          });
-          return transactions;
+            const cookie = req.cookies;
+            if (!cookie.accessToken) {
+                return res.status(401).json({ message: "Unauthorized" }); // unauthorized
+            }
+    
+            // Assuming you have a "transactions" collection or model to query from
+            let data = await transactions.find({ userId: req.params.userId }); // Assuming userId is the field to match
+            return res.json(data);
         } catch (error) {
-          console.error(error);
-          throw new Error("Error retrieving transactions");
+            res.status(400).json({ error: error.message });
         }
-      }
-      
-      export const getTransactionsByUser = async (req, res) => {
-        try {
-          const userId = req.params.userId;
-          
-          // Call the getTransactionByUser function to retrieve transactions for the user
-          const transactions = await getTransactionByUserFunc(userId);
-      
-          res.status(200).json(transactions);
-        } catch (error) {
-          res.status(500).json({ error: error.message });
-        }
-      }
-      
-
-
+    };
 /**
  * Return all transactions made by a specific user filtered by a specific category
   - Request Body Content: None
@@ -249,16 +243,14 @@ export const getAllTransactions = async (req, res) => {
  */
 
     export const getTransactionsByUserByCategory = async (req, res) => {
-    
-        console.log(req.params);
         try {
-            const cookie = req.cookies
-            if (!cookie.accessToken) {
-                return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-            }
+            
+            const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
+           if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
+
 
             const user = await User.findOne({ "username": req.params.username })
-            if (!user) return res.status(401).json({ message: "User not found" })
+            //if (!user) return res.status(401).json({ message: "User not found" })  //teoricamente non necessaria
 
             
             /**
@@ -288,7 +280,7 @@ export const getAllTransactions = async (req, res) => {
                 //{ $match: {type: req.params.category}},
             ]).then((result) => {
                 let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }))
-                res.json(data);
+                res.json({data :data , message : res.locals.message});
             }).catch(error => { throw (error) })
         } catch (error) {
             res.status(400).json({ error: error.message })
@@ -378,6 +370,51 @@ export const getTransactionsByGroup = async (req, res) => {
  */
 export const getTransactionsByGroupByCategory = async (req, res) => {
     try {
+        const name = req.params.name;
+        const type = req.params.category;
+
+        const group = await Group.findOne({name : name});
+        const category = await categories.findOne({type : type});
+
+        if(!group)
+            return res.status(401).json({message : "Group not found"});
+
+        if(!category)
+            return res.status(401).json({message : "Category not found"});
+
+        const groupT = [];
+
+        const result = await transactions.aggregate([
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "type",
+                    foreignField: "type",
+                    as: "categories_info"
+                }
+            },
+            { $unwind: "$categories_info" }
+        ]);
+
+        let data = result.filter(t => t.type === type).map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
+
+        const emails = [];
+
+        for(const m of group.members)
+            emails.push(m.email);
+
+        async function check() {
+            for (const t of data) {
+                const user = await User.findOne({username: t.username});
+
+                if (user && emails.some(e => e === user.email))
+                    groupT.push(t);
+            }
+        }
+
+        await check();
+
+        res.status(200).json({data : groupT});
     } catch (error) {
         res.status(400).json({ error: error.message })
     }
@@ -392,12 +429,12 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
  */
 export const deleteTransaction = async (req, res) => {
     try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+
+       const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
+       if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
+
         let data = await transactions.deleteOne({ _id: req.body._id });
-        return res.json("deleted");
+        return res.json({data : "success" , message : res.locals.message });
     } catch (error) {
         res.status(400).json({ error: error.message })
     }
@@ -414,13 +451,14 @@ export const deleteTransaction = async (req, res) => {
 export const deleteTransactions = async (req, res) => {
         try {
     
-            if (!verifyAuth(req, res, { authType: "Admin" })) return res.status(400).json("Only and Admin can access to this route");
-            const cookies = req.cookies
+            const adminAuth = verifyAuth(req, res, {authType: "Admin"})
+            if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+  
             const ids = req.body.ids
             for (const id of ids){
                 let data = await transactions.deleteOne({ _id: id });
             }
-            return res.json({message: "All the transaction deleted"});
+            return res.json({data : "All the transaction deleted" , message : res.locals.message});
         } catch (error) {
             res.status(400).json({ error: error.message })
         }
