@@ -17,25 +17,25 @@ export const handleDateFilterParams = (req) => {
         if(!date_regExp.test(query["from"]))
             throw new Error("wrong date format");
 
-        d.$gte = query.from + "T00:00:00.000Z";
+        d.$gte = new Date(query["from"] + "T00:00:00.000Z");
     }
 
     if(query["upTo"]) {
         if(!date_regExp.test(query["upTo"]))
             throw new Error("wrong date format");
 
-        d.$lte = query["upTo"] + "T23:59:59.000Z";
+        d.$lte = new Date(query["upTo"] + "T23:59:59.000Z");
     }
 
     if(query["date"]) {
-        if(query.from || query["upTo"])
+        if(query["from"] || query["upTo"])
             throw new Error("wrong query format");
 
         if(!date_regExp.test(query["date"]))
             throw new Error("wrong date format");
 
-        d.$gte = query["date"] + "T00:00:00.000Z";
-        d.$lte = query["date"] + "T23:59:59.000Z";
+        d.$gte = new Date(query["date"] + "T00:00:00.000Z");
+        d.$lte = new Date(query["date"] + "T23:59:59.000Z");
     }
 
     return {date: d};
@@ -205,15 +205,15 @@ export const handleAmountFilterParams = (req) => {
         if(isNaN(query["min"]))
             throw new Error("the min amount value is not a number");
 
-        a.$gte = query["min"];
+        a.$gte = parseFloat(query["min"]);
     }
 
     if(query["max"]) {
         if(isNaN(query["max"]))
             throw new Error("the max amount value is not a number");
 
-        a.$lte = query["max"];
+        a.$lte = parseFloat(query["max"]);
     }
 
-    return a;
+    return {amount: a};
 }
