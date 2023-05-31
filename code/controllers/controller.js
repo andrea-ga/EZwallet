@@ -40,32 +40,40 @@ export const createCategory = async (req, res) => {
     - error 401 returned if the specified category does not exist
     - error 401 is returned if new parameters have invalid values
  */
-    export const updateCategory = (req, res) => {
+    export const updateCategory = async (req, res) => {
         try {
-          const cookie = req.cookies;
-          if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" });
+            const adminAuth = verifyAuth(req, res, {authType: "Admin"});
+            if (!adminAuth.flag)
+                return res.status(401).json({ error: adminAuth.cause});
+      
+          const previousType = req.params.type;
+          const { type, color } = req.body;
+
+          const category = await categories.findOne( {type: previousType});
+          if (!category){
+            return res.status(401).json({ message: "Category not found" });
           }
-      
-          const categoryId = req.params.categoryId;
-          const { newCategoryName } = req.body;
-      
-          // Update the category in the server/database using the categoryId
-          categories.findByIdAndUpdate(categoryId, { name: newCategoryName }, { new: true })
-            .then(updatedCategory => {
-              if (!updatedCategory) {
-                return res.status(404).json({ message: "Category not found" });
-              }
-              res.json(updatedCategory);
-            })
-            .catch(err => {
-              throw err;
-            });
+          
+        
+         const count = await transactions.updateMany(
+            { type: previousType},
+            { type: type, color: color},
+            { upsert: true, }
+         );
+         
+         
+         await categories.updateOne(
+            {type: previousType}, 
+            {type: type, color: color},
+            {upsert: true}
+            );
+            
+         res.status(200).json({data: { message: "Category updated successfully", count: count.modifiedCount}});
+
         } catch (error) {
           res.status(400).json({ error: error.message });
         }
       };
-
 /**
  * Delete a category
   - Request Body Content: An array of strings that lists the `types` of the categories to be deleted
