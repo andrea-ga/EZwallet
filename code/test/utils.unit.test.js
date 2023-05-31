@@ -7,7 +7,7 @@ jest.mock('../models/User.js');
 
 describe("handleDateFilterParams", () => {
     test('from filter', () => {
-        const mockReq = {url : "localhost:3000/api/users/test/transactions?from=2023-04-30",
+        const mockReq = {url : "users/test/transactions?from=2023-04-30",
                         query: {from: "2023-04-30"}};
 
         const d = new Date("2023-04-30T00:00:00.000Z");
@@ -16,7 +16,7 @@ describe("handleDateFilterParams", () => {
     });
 
     test('upTo filter', () => {
-        const mockReq = {url : "localhost:3000/api/users/test/transactions?upTo=2023-05-10",
+        const mockReq = {url : "users/test/transactions?upTo=2023-05-10",
             query: {upTo: "2023-05-10"}};
 
         const d = new Date("2023-05-10T23:59:59.000Z");
@@ -25,7 +25,7 @@ describe("handleDateFilterParams", () => {
     });
 
     test('date filter', () => {
-        const mockReq = {url : "localhost:3000/api/users/test/transactions?date=2023-05-10",
+        const mockReq = {url : "users/test/transactions?date=2023-05-10",
             query: {date: "2023-05-10"}};
 
         const d1 = new Date("2023-05-10T00:00:00.000Z");
@@ -37,7 +37,7 @@ describe("handleDateFilterParams", () => {
 
     test('from and upTo filters', () => {
         const mockReq = {
-            url : "localhost:3000/api/users/test/transactions?from=2023-04-30&upTo=2023-05-10",
+            url : "users/test/transactions?from=2023-04-30&upTo=2023-05-10",
             query: {from: "2023-04-30", upTo: "2023-05-10"}};
 
         const d1 = new Date("2023-04-30T00:00:00.000Z");
@@ -50,7 +50,7 @@ describe("handleDateFilterParams", () => {
     test('date and upTo filters', () => {
         try {
             const mockReq = {
-                url : "localhost:3000/api/users/test/transactions?date=2023-04-30&upTo=2023-05-10",
+                url : "users/test/transactions?date=2023-04-30&upTo=2023-05-10",
                 query: {date: "2023-04-30", upTo: "2023-05-10"}};
 
             handleDateFilterParams(mockReq);
@@ -62,7 +62,7 @@ describe("handleDateFilterParams", () => {
     test('date and from filters', () => {
         try {
             const mockReq = {
-                url : "localhost:3000/api/users/test/transactions?from=2023-04-30&date=2023-05-10",
+                url : "users/test/transactions?from=2023-04-30&date=2023-05-10",
                 query: {from: "2023-04-30", date: "2023-05-10"}};
 
             handleDateFilterParams(mockReq);
@@ -74,7 +74,7 @@ describe("handleDateFilterParams", () => {
     test('wrong date - from filter', () => {
         try {
             const mockReq = {
-                url: "localhost:3000/api/users/test/transactions?from=2023-04-",
+                url: "users/test/transactions?from=2023-04-",
                 query: {from: "2023-04-"}
             };
 
@@ -87,7 +87,7 @@ describe("handleDateFilterParams", () => {
     test('wrong date - upTo filter', () => {
         try {
             const mockReq = {
-                url: "localhost:3000/api/users/test/transactions?upTo=2023-05-",
+                url: "users/test/transactions?upTo=2023-05-",
                 query: {upTo: "2023-05-"}
             };
 
@@ -100,7 +100,7 @@ describe("handleDateFilterParams", () => {
     test('wrong date - date filter', () => {
         try {
             const mockReq = {
-                url: "localhost:3000/api/users/test/transactions?date=2023-05-",
+                url: "users/test/transactions?date=2023-05-",
                 query: {date: "2023-05-"}
             };
 
@@ -625,21 +625,21 @@ describe("verifyAuth", () => {
 
 describe("handleAmountFilterParams", () => {
     test('min filter', () => {
-        const mockReq = {url : "localhost:3000//api/users/test/transactions?min=10",
+        const mockReq = {url : "users/test/transactions?min=10",
             query: {min: "10"}};
 
         expect(handleAmountFilterParams(mockReq)).toStrictEqual({amount: {$gte: 10}});
     });
 
     test('max filter', () => {
-        const mockReq = {url : "localhost:3000//api/users/test/transactions?max=50",
+        const mockReq = {url : "users/test/transactions?max=50",
             query: {max: "50"}};
 
         expect(handleAmountFilterParams(mockReq)).toStrictEqual({amount: {$lte: 50}});
     });
 
     test('max and min filter', () => {
-        const mockReq = {url : "localhost:3000//api/users/test/transactions?min=10&max=50",
+        const mockReq = {url : "users/test/transactions?min=10&max=50",
             query: {min: "10", max: "50"}};
 
         expect(handleAmountFilterParams(mockReq)).toStrictEqual({amount: {$gte: 10, $lte: 50}});
@@ -648,7 +648,7 @@ describe("handleAmountFilterParams", () => {
     test('min is not a number', () => {
         try {
             const mockReq = {
-                url: "localhost:3000//api/users/test/transactions?min=ab",
+                url: "users/test/transactions?min=ab",
                 query: {min: "ab"}
             };
 
@@ -661,7 +661,7 @@ describe("handleAmountFilterParams", () => {
     test('max is not a number', () => {
         try {
             const mockReq = {
-                url: "localhost:3000//api/users/test/transactions?max=ab",
+                url: "users/test/transactions?max=ab",
                 query: {max: "ab"}
             };
 

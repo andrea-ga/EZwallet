@@ -619,7 +619,7 @@ describe("getTransactionsByUserByCategory", () => {
 
 describe("getTransactionsByGroup", () => {
     test('admin route - should return empty list if there are no group transactions', async () => {
-        const mockReq = {url: "localhost:3000/api/transactions/groups/group1",
+        const mockReq = {url: "transactions/groups/group1",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -652,7 +652,7 @@ describe("getTransactionsByGroup", () => {
     });
 
     test('admin route - should retrieve list of all group transactions', async () => {
-        const mockReq = {url: "localhost:3000/api/transactions/groups/group1",
+        const mockReq = {url: "transactions/groups/group1",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -696,7 +696,7 @@ describe("getTransactionsByGroup", () => {
     });
 
     test('user route - should return empty list if there are no group transactions', async () => {
-        const mockReq = {url: "localhost:3000/api/groups/group1/transactions",
+        const mockReq = {url: "groups/group1/transactions",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -729,7 +729,7 @@ describe("getTransactionsByGroup", () => {
     });
 
     test('user route - should retrieve list of all group transactions', async () => {
-        const mockReq = {url: "localhost:3000/api/groups/group1/transactions",
+        const mockReq = {url: "groups/group1/transactions",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -773,7 +773,7 @@ describe("getTransactionsByGroup", () => {
     });
 
     test('admin route - Unauthorized access', async () => {
-        const mockReq = {url: "localhost:3000/api/transactions/groups/group1",
+        const mockReq = {url: "transactions/groups/group1",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -810,7 +810,7 @@ describe("getTransactionsByGroup", () => {
     });
 
     test('user route - Unauthorized access', async () => {
-        const mockReq = {url: "localhost:3000/api/groups/group1/transactions",
+        const mockReq = {url: "groups/group1/transactions",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -847,7 +847,7 @@ describe("getTransactionsByGroup", () => {
     });
 
     test('admin route - Group not found', async () => {
-        const mockReq = {url: "localhost:3000/api/transactions/groups/group1",
+        const mockReq = {url: "transactions/groups/group1",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -883,7 +883,7 @@ describe("getTransactionsByGroup", () => {
     });
 
     test('user route - Group not found', async () => {
-        const mockReq = {url: "localhost:3000/api/groups/group1/transactions",
+        const mockReq = {url: "groups/group1/transactions",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -919,7 +919,7 @@ describe("getTransactionsByGroup", () => {
     });
 
     test('admin route - raise exception', async () => {
-        const mockReq = {url: "localhost:3000/api/transactions/groups/group1",
+        const mockReq = {url: "transactions/groups/group1",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -958,7 +958,7 @@ describe("getTransactionsByGroup", () => {
     });
 
     test('user route - raise exception', async () => {
-        const mockReq = {url: "localhost:3000/api/groups/group1/transactions",
+        const mockReq = {url: "groups/group1/transactions",
             params: [{name: "group1"}]};
         const mockRes = {
             status: jest.fn().mockReturnThis(),
