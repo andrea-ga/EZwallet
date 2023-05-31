@@ -2,8 +2,10 @@ import request from 'supertest';
 import { app } from '../app';
 import { categories, transactions } from '../models/model';
 import { User, Group } from "../models/User.js";
-import { createCategory, getCategories, createTransaction,
-    getAllTransactions, getTransactionsByGroup } from "../controllers/controller.js";
+import {
+    createCategory, getCategories, createTransaction,
+    getAllTransactions, getTransactionsByGroup, getTransactionsByUserByCategory
+} from "../controllers/controller.js";
 import { verifyAuth } from "../controllers/utils.js";
 
 jest.mock('../models/model');
@@ -611,9 +613,317 @@ describe("getTransactionsByUser", () => {
     });
 })
 
-describe("getTransactionsByUserByCategory", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+describe("getTransactionsByUserByCategory", () => {
+    test('admin route - should return empty list if there are no transactions for that user and category', async () => {
+        const mockReq = {url: "transactions/users/test/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role: "admin"});
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValue([]);
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            data: [],
+            refreshedTokenMessage: mockRes.locals.refreshedTokenMessage
+        });
+    });
+
+    test('admin route - should return list of transactions for that user and category', async () => {
+        const mockReq = {url: "transactions/users/test/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        const retrievedTransactions = [
+            {username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}},
+            {username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}}];
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role:"admin"});
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            data: [{username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+                    {username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"}],
+            refreshedTokenMessage: mockRes.locals.refreshedTokenMessage
+        });
+    });
+
+    test('user route - should return empty list if there are no transactions for that user and category', async () => {
+        const mockReq = {url: "/users/test/transactions/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role: "user"});
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValue([]);
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            data: [],
+            refreshedTokenMessage: mockRes.locals.refreshedTokenMessage
+        })
+    });
+
+    test('user route - should return list of transactions for that user and category', async () => {
+        const mockReq = {url: "/users/test/transactions/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        const retrievedTransactions = [
+            {username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}},
+            {username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}}];
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role:"user"});
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            data: [{username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+                    {username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"}],
+            refreshedTokenMessage: mockRes.locals.refreshedTokenMessage
+        });
+    });
+
+    test('admin route - should return 500 if there is an error', async () => {
+        const mockReq = {url: "transactions/users/test/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role:"admin"});
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockImplementation(() => {
+            throw new Error("Internal error");
+        });
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(500);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "Internal error"
+        });
+    });
+
+    test('user route - should return 500 if there is an error', async () => {
+        const mockReq = {url: "users/test/transactions/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshedTokenMessage: undefined
+            }
+        }
+
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role:"user"});
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockImplementation(() => {
+            throw new Error("Internal error");
+        });
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(500);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "Internal error"
+        });
+    });
+
+    test('admin route - should return 401 if user is not authorized', async () => {
+        const mockReq = {url: "transactions/users/test/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn()
+        }
+
+        const retrievedTransactions = [
+            {username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}},
+            {username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}}];
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role:"admin"});
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValue({flag : false, cause: "Unauthorized"});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "Unauthorized"
+        });
+    });
+
+    test('user route - should return 401 if user is not authorized', async () => {
+        const mockReq = {url: "users/test/transactions/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn()
+        }
+
+        const retrievedTransactions = [
+            {username: "test", amount: 100, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}},
+            {username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z",
+                categories_info: {type: "type1", color: "color1"}}];
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role:"user"});
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValue({flag : false, cause: "Unauthorized"});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "Unauthorized"
+        });
+    });
+
+    test('admin route - should return 400 if user does not exist', async () => {
+        const mockReq = {url: "transactions/users/test/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn()
+        }
+
+        jest.spyOn(User, "findOne").mockResolvedValue(null);
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(null);
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "user does not exist"
+        });
+    });
+
+    test('user route - should return 400 if user does not exist', async () => {
+        const mockReq = {url: "users/test/transactions/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn()
+        }
+
+        jest.spyOn(User, "findOne").mockResolvedValue(null);
+        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(null);
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "user does not exist"
+        });
+    });
+
+    test('admin route - should return 400 if category does not exist', async () => {
+        const mockReq = {url: "transactions/users/test/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn()
+        }
+
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role:"admin"});
+        jest.spyOn(categories, "findOne").mockResolvedValue(null);
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(null);
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "category does not exist"
+        });
+    });
+
+    test('user route - should return 400 if category does not exist', async () => {
+        const mockReq = {url: "users/test/transactions/category/type1",
+            params: [{username: "test", category: "type1"}]};
+        const mockRes = {
+            status : jest.fn().mockReturnThis(),
+            json: jest.fn()
+        }
+
+        jest.spyOn(User, "findOne").mockResolvedValue({username: "test", email:"test@test.com", role:"user"});
+        jest.spyOn(categories, "findOne").mockResolvedValue(null);
+        jest.spyOn(transactions, "aggregate").mockResolvedValue(null);
+        verifyAuth.mockReturnValue({flag : true});
+
+        await getTransactionsByUserByCategory(mockReq, mockRes);
+
+        expect(transactions.aggregate).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            error: "category does not exist"
+        });
     });
 })
 
