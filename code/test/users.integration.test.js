@@ -62,7 +62,6 @@ describe("getUsers", () => {
     test("should all users", async () => {
       let res = await request(app).get("/api/users").set("Cookie" , "accessToken=" + generateToken(list_of_users[2],'1h')+"; refreshToken=" + generateToken(list_of_users[2],'1h'))
       expect(res.status).toBe(200)
-      console.log(res.body.data)
       expect(res.body.data[0]).toStrictEqual({username : list_of_users[0].username, email : list_of_users[0].email, role : list_of_users[0].role});
       expect(res.body.data[1]).toStrictEqual({username : list_of_users[1].username, email : list_of_users[1].email, role : list_of_users[1].role});
       expect(res.body.data[2]).toStrictEqual({username : list_of_users[2].username, email : list_of_users[2].email, role : list_of_users[2].role});
@@ -303,7 +302,94 @@ test("Admin get group", async () => {
 })
 
 describe("addToGroup", () => { 
-  
+
+  let list_of_users = [{username: "tester", email: "test@test.com", password: "tester", role: "Regular"}, 
+  {username: "tester2", email: "test2@test.com", password: "tester2", role: "Regular"}, 
+  {username: "tester3", email: "test3@test.com", password: "tester3", role: "Admin"},
+  {username: "tester4", email: "tes4@test.com", password: "tester4", role: "Regular"},
+  {username: "tester5", email: "tes5@test.com", password: "tester5", role: "Admin"},
+  {username: "tester6", email: "tes6@test.com", password: "tester6", role: "Regular"},
+  {username: "tester7", email: "tes7@test.com", password: "tester7", role: "Regular"},
+  {username: "tester8", email: "tes8@test.com", password: "tester8", role: "Regular"},
+  {username: "tester9", email: "test9@test.com", password: "tester9", role: "Regular"},
+  {username: "tester10", email: "test10@test.com", password: "tester10", role: "Regular"}]
+
+//admin use path /api/groups/:name/insert
+//user use path /api/groups/:name/add
+beforeAll(async () => {
+  for (const c of list_of_users)
+    { await User.create( c )}});
+  beforeEach(async () => {
+    await Group.deleteMany({});
+    await Group.create({name : "test_group", members : [{email :list_of_users[0].email}, {email :list_of_users[1].email}]})
+    await Group.create({name : "test_group2", members : [{email :list_of_users[2].email}, {email :list_of_users[3].email}]})
+  });
+  afterAll(async () => {
+    await Group.deleteMany({});
+    await User.deleteMany({});
+   });
+test("Admin add user to group", async () => {
+  let group = "test_group"
+  let res = await request(app).patch(`/api/groups/${group}/insert`).send({emails : [list_of_users[4].email]}).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h'));
+  expect(res.status).toBe(200)
+  expect(res.body).toStrictEqual({data :{group :{name : "test_group", members : [{email :list_of_users[0].email}, {email :list_of_users[1].email}, {email :list_of_users[4].email}]}, alreadyInGroup : [], membersNotFound : []}});
+
+  //let group2 = await Group.findOne({name : "test_group"})
+  //console.log(group2) 
+})
+  test("Admin add user to group with some users already in the group", async () => {
+    let group = "test_group"
+    let res = await request(app).patch(`/api/groups/${group}/insert`).send({emails : [list_of_users[0].email]}).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h'));
+    expect(res.status).toBe(400)
+    expect(res.body).toStrictEqual({error : "All emails wrong or already used"})
+  })
+
+  test("Admin add user to group with some users already in the group", async () => {
+    let group = "test_group"
+    let res = await request(app).patch(`/api/groups/${group}/insert`).send({emails : [list_of_users[0].email, list_of_users[5].email]}).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h'));
+    expect(res.status).toBe(200)
+    expect(res.body).toStrictEqual({data :{group :{name : "test_group", members : [{email :list_of_users[0].email}, {email :list_of_users[1].email}, {email :list_of_users[5].email}]}, alreadyInGroup : [{email :list_of_users[0].email}], membersNotFound : []}});
+
+  })
+
+  test("User try to add an user to a group where he is not enrolled", async () => {
+  let group = "test_group2"
+  let res = await request(app).patch(`/api/groups/${group}/add`).send({emails : [list_of_users[4].email]}).set("Cookie" , "accessToken=" + generateToken(list_of_users[0],'1h')+"; refreshToken=" + generateToken(list_of_users[0],'1h'));
+
+  expect(res.status).toBe(401)
+  expect(res.body).toStrictEqual({error : "Unauthorized"})
+  })
+
+  test("User try to add an user to a group where he is enrolled", async () => {
+    let group = "test_group"
+    let res = await request(app).patch(`/api/groups/${group}/add`).send({emails : [list_of_users[4].email]}).set("Cookie" , "accessToken=" + generateToken(list_of_users[0],'1h')+"; refreshToken=" + generateToken(list_of_users[0],'1h'));
+
+    expect(res.status).toBe(200)
+    expect(res.body).toStrictEqual({data :{group :{name : "test_group", members : [{email :list_of_users[0].email}, {email :list_of_users[1].email}, {email :list_of_users[4].email}]}, alreadyInGroup : [], membersNotFound : []}});
+  })
+
+  test("wrong request format, no field emails", async() => {
+    let group = "test_group"
+    let res = await request(app).patch(`/api/groups/${group}/add`).send({}).set("Cookie" , "accessToken=" + generateToken(list_of_users[0],'1h')+"; refreshToken=" + generateToken(list_of_users[0],'1h'));
+
+    expect(res.status).toBe(400)
+    expect(res.body).toStrictEqual({error : "Bad request"})
+  }
+  )
+  test("No cookie", async() => {
+    let group = "test_group"
+    let res = await request(app).patch(`/api/groups/${group}/add`).send({emails : [list_of_users[4].email]});
+
+    expect(res.status).toBe(401)
+    expect(res.body).toStrictEqual({error : "Unauthorized"})
+  })
+  test("Group not found " , async() => {
+    let group = "test_group3"
+    let res = await request(app).patch(`/api/groups/${group}/add`).send({emails : [list_of_users[4].email]}).set("Cookie" , "accessToken=" + generateToken(list_of_users[0],'1h')+"; refreshToken=" + generateToken(list_of_users[0],'1h'));
+
+    expect(res.status).toBe(400)
+    expect(res.body).toStrictEqual({error : "Group not found"})
+  })
 })
 
 describe("removeFromGroup", () => {
@@ -348,7 +434,6 @@ test("Admin remove user from group", async () => {
   let gr = "test_group"
   let email = [list_of_users[0].email, list_of_users[1].email]
   let res = await request(app).patch(`/api/groups/${gr}/pull`).send({ emails : email}).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h'));
-  console.log(res.body) 
   expect(res.status).toBe(200)
   expect(res.body).toStrictEqual({data : {group: {name : "test_group", members : [{email :list_of_users[0].email}]},  membersNotFound : [],notInGroup : []}})
 
@@ -427,8 +512,13 @@ describe("deleteUser", () => {
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ data: { deletedTransactions: 1, removedFromGroup: true } })
   })
+ test("Admin try to delete another admin", async() => {
+  let res = await request(app).delete(`/api/users`).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h')).send({email : list_of_users[2].email});
+  expect(res.status).toBe(400)
+  expect(res.body.error).toBe("Admin can't be removed")
+ })
 
-  test.skip("Admin delete another user that the only member of a group", async () => {
+test.only("Admin delete another user that the only member of a group", async () => {
     let res = await request(app).delete(`/api/users`).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h')).send({email : list_of_users[7].email});
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ data: { deletedTransactions: 0, removedFromGroup: true } })

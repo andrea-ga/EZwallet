@@ -13,7 +13,7 @@ import { error } from 'console';
  */
 export const register = async (req, res) => {
     try {
-        let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+        let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
         const { username, email, password } = req.body;
         if (!username || !email || !password || username == "" || email == "" || password == "" || !emailformat.test(email))
             return res.status(400).json({ error: "Not valid request" });
@@ -46,7 +46,7 @@ export const register = async (req, res) => {
  */
 export const registerAdmin = async (req, res) => {
     try {
-        let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+        let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
         const { username, email, password } = req.body;
         if (!username || !email || !password || username == "" || email == "" || password == "" || !emailformat.test(email))
             return res.status(400).json({ error: "Not valid request" });
@@ -80,13 +80,13 @@ export const registerAdmin = async (req, res) => {
  */
 export const login = async (req, res) => {
     try {
-        let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+        let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
         const { email, password } = req.body;
         if (!email || !password || email == "" || password == "" || !emailformat.test(email))
             return res.status(400).json({ error: "Not valid request" });
         const existingUser = await User.findOne({ email: email })
         if (!existingUser)
-            return res.status(400).json({error : 'please you need to register'})
+            return res.status(400).json({error : 'User not registered yet'})
         const match = await bcrypt.compare(password, existingUser.password)
         if (!match) return res.status(400).json({error :'wrong credentials'})
         //CREATE ACCESSTOKEN
@@ -126,7 +126,7 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
     try {
     let simpleAuth = verifyAuth(req, res, { authType: "Simple" })
-    if (!simpleAuth.flag) return res.status(400).json({error : "Unauthorized"})
+    if (!simpleAuth.flag) return res.status(401).json({error : "Unauthorized"})
     const user = await User.findOne({ refreshToken: req.refreshToken })
     if (!user) return res.status(400).json({error : 'user not found'})
     

@@ -72,7 +72,7 @@ export const getUser = async (req, res) => {
 export const createGroup = async (req, res) => {
   try {
 
-    let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
 
     const simpleAuth = verifyAuth(req, res, { authType: "Simple" })
     if (!simpleAuth.flag)
@@ -130,7 +130,6 @@ export const createGroup = async (req, res) => {
     else {
       if (!memberEmails.includes(us.email))
         members.push({email : us.email})
-      console.log(members)
       const gr = new Group({ name, members });
       let group = await gr.save();
        return  res.status(200).json({
@@ -214,22 +213,21 @@ export const getGroup = async (req, res) => {
 export const addToGroup = async (req, res) => {
   try {
 
-    let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
 
-    const reAd = new RegExp("^.+/api/groups/[^/]+/insert$");
+    const reAd = new RegExp("^.*/groups/[^/]+/insert$");
 
-    const reUs = new RegExp("^.+/api/groups/[^/]+/add$");
+    const reUs = new RegExp("^.*/groups/[^/]+/add$");
     let groupfind;
 
-
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
-    if (adminAuth.flag && reAd.test(req.path)) // regexp for the URL 
+    if (adminAuth.flag && reAd.test(req.url)) // regexp for the URL 
     {
       groupfind = await Group.findOne({ name: req.params.name });
       if (!groupfind)
         return res.status(400).json({ error: "Group not found" });
     }
-    else if (reUs.test(req.path)) //regexp for the URL
+    else if (reUs.test(req.url)) //regexp for the URL
     {
       groupfind = await Group.findOne({ name: req.params.name });
       if (!groupfind) 
@@ -242,29 +240,25 @@ export const addToGroup = async (req, res) => {
     {
       return res.status(401).json({ error: "Unauthorized" });
     }
-
     if (!req.body.emails)
       return res.status(400).json({ error: "Bad request" });
     //--> to be inserted?   || req.body.emails.length==0
-
     const membersNotFound = [];
     const alreadyInGroup = [];
     const newMembers = [];
-
     for (let m of req.body.emails) {
       if (m == "" || !emailformat.test(m))
         return res.status(400).json({ error: "Bad request" });
+      
       let found = await User.findOne({ email: m });
       let already = await Group.findOne({ members: { $elemMatch: { email: m } } });
-
       if (!found)
-        membersNotFound.push(m);
+        membersNotFound.push({ email : m });
       else if (already)
-        alreadyInGroup.push(m);
+        alreadyInGroup.push({ email : m });
       else
-        newMembers.push(found);
+        newMembers.push({email : m });
     }
-
     if (newMembers.length === 0)
       return res.status(400).json({ error: "All emails wrong or already used" });
 
@@ -279,7 +273,9 @@ export const addToGroup = async (req, res) => {
     );
 
     const finalGroup = {
-      group: group,
+      group: {name : group.name
+        ,
+        members : group.members.map(e => ({email : e.email}))},
       alreadyInGroup: alreadyInGroup,
       membersNotFound: membersNotFound
     }
@@ -304,7 +300,7 @@ export const removeFromGroup = async (req, res) => {
   try {
     const reAd = new RegExp("^/groups/[^/]+/pull$");
     const reUs = new RegExp("^/groups/[^/]+/remove$");
-    let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
     const cookie = req.cookies
 
     const name = req.params.name;
@@ -405,7 +401,7 @@ export const removeFromGroup = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
 
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
     if (!adminAuth.flag)
@@ -428,7 +424,9 @@ export const deleteUser = async (req, res) => {
     if (!userFound) {
       return res.status(400).json({ error: "User not found" });
     }
-
+    if(userFound.role == "Admin"){
+      return res.status(400).json({ error: "Admin can't be removed" });
+    }
     // delete transactions if exists any
     const deletedTransactions = await transactions.remove({ username: userFound.username });
 
