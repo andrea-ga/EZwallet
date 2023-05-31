@@ -266,7 +266,7 @@ describe("createTransaction", () => {
             }
         }
 
-        const newTransaction = {username: "test1", type: "type1", amount: 100};
+        const newTransaction = {username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z"};
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
@@ -293,7 +293,7 @@ describe("createTransaction", () => {
             }
         }
 
-        const newTransaction = {username: "test1", type: "type1", amount: 100};
+        const newTransaction = {username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z"};
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
@@ -342,7 +342,7 @@ describe("createTransaction", () => {
             }
         }
 
-        const newTransaction = {username: "test1", type: "type1", amount: 100};
+        const newTransaction = {username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z"};
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
@@ -365,7 +365,7 @@ describe("createTransaction", () => {
             }
         }
 
-        const newTransaction = {username: "test1", type: "type1", amount: 100};
+        const newTransaction = {username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z"};
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
@@ -388,7 +388,7 @@ describe("createTransaction", () => {
             }
         }
 
-        const newTransaction = {username: "test1", type: "type1", amount: 100};
+        const newTransaction = {username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z"};
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
@@ -411,7 +411,7 @@ describe("createTransaction", () => {
             }
         }
 
-        const newTransaction = {username: "test1", type: "type1", amount: 100};
+        const newTransaction = {username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z"};
         jest.spyOn(User, "findOne").mockResolvedValueOnce("")
             .mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
@@ -435,7 +435,7 @@ describe("createTransaction", () => {
             }
         }
 
-        const newTransaction = {username: "test1", type: "type1", amount: 100};
+        const newTransaction = {username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z"};
         jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role : 'Admin' })
             .mockResolvedValue("");
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
@@ -459,7 +459,7 @@ describe("createTransaction", () => {
             }
         }
 
-        const newTransaction = {username: "test1", type: "type1", amount: 100};
+        const newTransaction = {username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z"};
         jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test2', email: 'test2@example.com', role : 'Admin' })
             .mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1"});
@@ -483,7 +483,7 @@ describe("createTransaction", () => {
             }
         }
 
-        const newTransaction = {username: "test1", type: "type1", amount: 100};
+        const newTransaction = {username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z"};
         jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role : 'Admin' });
         jest.spyOn(categories, "findOne").mockResolvedValue("");
         jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);

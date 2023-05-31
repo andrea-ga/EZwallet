@@ -171,7 +171,8 @@ export const createTransaction = async (req, res) => {
         const new_transactions = new transactions({ username, amount, type });
 
         const data = await new_transactions.save();
-        return res.status(200).json({data : data , refreshedTokenMessage : res.locals.refreshedTokenMessage});
+        return res.status(200).json({data : { username: data.username, type: data.type,
+                amount: data.amount, date: data.date } , refreshedTokenMessage : res.locals.refreshedTokenMessage});
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
