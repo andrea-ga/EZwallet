@@ -76,36 +76,47 @@ export const createCategory = async (req, res) => {
     export const deleteCategory = async (req, res) => {
         try {
 
-          if (!verifyAuth(req, res, { authType: "Admin" })) return ;
-          // check cookies
-          const cookie = req.cookies;
-          if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" });
-          }
+          if (!verifyAuth(req, res, { authType: "Admin" })) 
+            return ;
       
-          // the variable is an array retrieved from the request body
           const cat = req.body.types;
 
-      
           // Delete the category from the server/database using the categoryId
-          
           
           // find all the categories that have the type given in the req.body.type parameter and delete the category
           // ---> if only one category per type or per color no foor loop needed. We have to check if color or type attribute are unique as tuple or as individual attribute
           for (const c of cat){
             console.log(c);
-            const deleted = await categories.findOneAndDelete({type: c}).then((e) => console.log(e))
-            .catch((error)=> {
-                res.status(400);
-            });
+
+
+            // updates all the transaction that have the transaction type as c
+            transactions.updateMany(
+                { type: c},
+                { type: "investment"},
+                {
+                  upsert: true,
+                  
+                }
+             )
+            const cat = await categories.findOne({type: c});
+            if (!cat){
+                return res.status(401).json({message: "Category cat does not exist "});
+            }
+            
+            const deleted = await categories.findOneAndDelete({type: c})
+                                                .catch(()=> {
+                                                        res.status(401).json({message: "Category does not exist"});
+                                                }
+                                                );
           }
 
-          res.status(200).json({ message: "Category updated successfully" });
+          res.status(200).json( {data: { message: "Category updated successfully" }});
           
         } catch (error) {
           res.status(400).json({ error: error.message });
         }
       };
+
 
 /**
  * Return all the categories
@@ -208,7 +219,7 @@ export const getAllTransactions = async (req, res) => {
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
-}
+};
 
 /**
  * Return all transactions made by a specific user
@@ -219,20 +230,49 @@ export const getAllTransactions = async (req, res) => {
     - empty array is returned if there are no transactions made by the user
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
+
     export const getTransactionByUser = async (req, res) => {
         try {
-            const cookie = req.cookies;
-            if (!cookie.accessToken) {
-                return res.status(401).json({ message: "Unauthorized" }); // unauthorized
+            const userAuth=verifyAuth(req, res, { authType: "Admin" })
+            if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
+
+            const user = await User.findOne({ "username": req.params.username })
+            if (!user){
+                return res.status(401).json({error: "User does not exist"});
             }
-    
+
+        
+        const result = await transactions.aggregate([
+            {
+                $match: { 
+                    username: req.params.username
+                }
+            },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "type",
+                    foreignField: "type",
+                    as: "categories_info"
+                }
+            },
+            { $unwind: "$categories_info" }
+        ]);
+
+        const data = result.map(r => Object.assign({}, { _id: r._id, username: r.username,
+                                                          type: r.type, amount: r.amount, date: r.date, 
+                                                        color: r.categories_info.color }
+                                                        )
+                                );
+        return res.status(200).json({data: data, refreshedTokenMessage: res.locals.refreshedTokenMessage});
             // Assuming you have a "transactions" collection or model to query from
-            let data = await transactions.find({ userId: req.params.userId }); // Assuming userId is the field to match
-            return res.json(data);
+          //  let data = await transactions.find({ userId: req.params.userId }); // Assuming userId is the field to match
+          //  return res.json(data);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            res.status(500).json({ error: error.message });
         }
     };
+
 /**
  * Return all transactions made by a specific user filtered by a specific category
   - Request Body Content: None
@@ -245,28 +285,25 @@ export const getAllTransactions = async (req, res) => {
     export const getTransactionsByUserByCategory = async (req, res) => {
         try {
             
-            const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
+            const userAuth=verifyAuth(req, res, { authType: "Admin", username : req.params.username })
            if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
 
 
-            const user = await User.findOne({ "username": req.params.username })
-            //if (!user) return res.status(401).json({ message: "User not found" })  //teoricamente non necessaria
+           
+            const user = await User.findOne({ username: req.params.username })
+            if (!user) return res.status(401).json({ message: "User not found" });
 
             
-            /**
-             * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
-             */
-    
-            //let type = req.params[2]
-            //let username = req.params[1]
-            
-            /*
-            for (const el in req.params){
-                console.log(typeof req.params[el])
-            }
-            */
+            const category = await categories.findOne( { type: req.params.category } ); 
+        
+            if (!category)
+                return res.status(401).json({ message: "Category not found" })
+
             transactions.aggregate([
-                {$match: { type: req.params.category, username: req.params.username}},
+                {
+                    $match: 
+                        { type: req.params.category, username: req.params.username} 
+                },
                 {
                     $lookup: {
                         from: "categories",
@@ -277,7 +314,6 @@ export const getAllTransactions = async (req, res) => {
                 },
                 { $unwind: "$categories_info" }
                 
-                //{ $match: {type: req.params.category}},
             ]).then((result) => {
                 let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }))
                 res.json({data :data , message : res.locals.message});
@@ -286,7 +322,7 @@ export const getAllTransactions = async (req, res) => {
             res.status(400).json({ error: error.message })
         }
     
-    }
+    };
 
 /**
  * Return all transactions made by members of a specific group
