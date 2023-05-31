@@ -401,7 +401,7 @@ export const removeFromGroup = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
+   let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
 
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
     if (!adminAuth.flag)
@@ -410,10 +410,9 @@ export const deleteUser = async (req, res) => {
 
 
     //let countDeletionFromGroups = 0; //useless
-    let removedFromGroup = false;
-    let groupsIdArr = [];
-
-    let email = req.body.email;
+  let removed = false;
+	let grouplist ;
+	let email = req.body.email;
 
     if (email == "" || !emailformat.test(email))
       return res.status(400).json({ error: "Bad request" });
@@ -427,45 +426,30 @@ export const deleteUser = async (req, res) => {
     if(userFound.role == "Admin"){
       return res.status(400).json({ error: "Admin can't be removed" });
     }
-    // delete transactions if exists any
-    const deletedTransactions = await transactions.remove({ username: userFound.username });
-
-    // find the groups and push all the ids in the arr
-    const t = Group.find(
+	const deletedTransactions = await transactions.deleteMany({ username: userFound.username });
+	let gf = await Group.findOne(
       {
         "members.email": email
-      }).then((result) => {
-        result.map((element) => {
-          groupsIdArr.push(element._id.toString());
-          removedFromGroup = true;
-        })
-      });
-
-    if (groupsIdArr.length > 0)
-      removedFromGroup = true;
-    // update the Group list of memebers so remove the member 
-    const test = await Group.updateMany(
-      { members: { email: email } },
-      { $pull: { members: { email: email } } },
-    );
-
-    // delete user from DB after all checks and the delete before
-    await User.deleteOne({ email: email });
-
-
-
-    // delete the group if in the previously ones found groups there are no members
-    for (let v in groupsIdArr) {
-      let x = await Group.findOneAndDelete(
-        {
-          $and: [
-            { _id: groupsIdArr[v] },
-            { $where: "this.members.length == 0" }]
-        }
-      );
-
-    }
-    res.status(200).json({ data: { deletedTransactions: deletedTransactions.deletedCount, removedFromGroup: removedFromGroup }, refreshToken: res.locals.refreshedTokenMessage });
+      })
+    console.log(gf)
+	  if(gf)
+	  {
+		removed=true
+		grouplist = gf.members.filter(e => e.email!= email)
+    console.log(gf.name)
+		if(grouplist.length==0) 
+		{
+		await Group.deleteOne({ name : gf.name})
+    console.log("deleted")
+		}
+		else 
+		{
+		await Group.updateOne({name : gf.name},{members : grouplist})
+    console.log("updated")
+		}
+	  }
+    await User.deleteOne({email : email})
+	   res.status(200).json({ data: { deletedTransactions: deletedTransactions.deletedCount, removedFromGroup: removed }, refreshToken: res.locals.refreshedTokenMessage });
 
   } catch (err) {
     res.status(500).json({ error: err.message })

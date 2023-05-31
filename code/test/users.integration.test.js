@@ -518,13 +518,14 @@ describe("deleteUser", () => {
   expect(res.body.error).toBe("Admin can't be removed")
  })
 
-test.only("Admin delete another user that the only member of a group", async () => {
+test("Admin delete another user that the only member of a group", async () => {
     let res = await request(app).delete(`/api/users`).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h')).send({email : list_of_users[7].email});
+   console.log(res.body.error)
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ data: { deletedTransactions: 0, removedFromGroup: true } })
-    let present = await Group.find({name : "test_group4"})
+    let present = await Group.findOne({name : "test_group4"})
     expect(present).toBeNull()
-    let present2 = await User.find({email : list_of_users[7].email})
+    let present2 = await User.findOne({email : list_of_users[7].email})
     expect(present2).toBeNull()
   })
 })
