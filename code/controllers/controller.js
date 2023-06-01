@@ -239,7 +239,7 @@ export const getAllTransactions = async (req, res) => {
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
 
-    export const getTransactionByUser = async (req, res) => {
+export const getTransactionByUser = async (req, res) => {
         try {
             const userAuth=verifyAuth(req, res, { authType: "Admin" })
             if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
@@ -293,41 +293,9 @@ export const getAllTransactions = async (req, res) => {
     export const getTransactionsByUserByCategory = async (req, res) => {
         try {
             
-            const userAuth=verifyAuth(req, res, { authType: "Admin", username : req.params.username })
-           if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
-
-
-           
-            const user = await User.findOne({ username: req.params.username })
-            if (!user) return res.status(401).json({ message: "User not found" });
-
-            
-            const category = await categories.findOne( { type: req.params.category } ); 
         
-            if (!category)
-                return res.status(401).json({ message: "Category not found" })
-
-            transactions.aggregate([
-                {
-                    $match: 
-                        { type: req.params.category, username: req.params.username} 
-                },
-                {
-                    $lookup: {
-                        from: "categories",
-                        localField: "type",
-                        foreignField: "type",
-                        as: "categories_info"
-                    }
-                },
-                { $unwind: "$categories_info" }
-                
-            ]).then((result) => {
-                let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }))
-                res.json({data :data , message : res.locals.message});
-            }).catch(error => { throw (error) })
         } catch (error) {
-            res.status(400).json({ error: error.message })
+            res.status(500).json({ error: error.message })
         }
     
     };
