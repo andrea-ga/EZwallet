@@ -290,50 +290,50 @@ export const getTransactionByUser = async (req, res) => {
     - empty array is returned if there are no transactions made by the user with the specified category
     - error 401 is returned if the user or the category does not exist
  */
-    export const getTransactionsByUserByCategory = async (req, res) => {
-        try {
-            const regExp = new RegExp("^(\/transactions\/)"); //Admin-only route
-            let user_transactions = [];
+export const getTransactionsByUserByCategory = async (req, res) => {
+    try {
+        const regExp = new RegExp("^(\/transactions\/)"); //Admin-only route
+        let user_transactions = [];
 
-            if(regExp.test(req.url)) {
-                const adminAuth = verifyAuth(req, res, { authType: "Admin" });
-                if (!adminAuth.flag)
-                    return res.status(401).json({ error: adminAuth.cause});
-            } else {
-                const userAuth= verifyAuth(req, res, { authType: "User", username : req.params.username });
-                if (!userAuth.flag)
-                    return res.status(401).json({ error: userAuth.cause });
-            }
-
-            const user = await User.findOne({ username: req.params.username });
-            if(!user)
-                return res.status(400).json({ error: "user does not exist" });
-
-            const category = await categories.findOne({ type: req.params.category });
-            if(!category)
-                return res.status(400).json({ error: "category does not exist" });
-
-            const result = await transactions.aggregate([
-                {
-                    $lookup: {
-                        from: "categories",
-                        localField: "type",
-                        foreignField: "type",
-                        as: "categories_info",
-                    }
-                },
-                { $unwind: "$categories_info" },
-                { $match: { username: req.params.username, type: req.params.category } }
-            ]);
-
-            if(result.length !== 0)
-                user_transactions = result.map(v => Object.assign({}, { _id: v._id, username: v.username,
-                    amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
-            return res.status(200).json({data : user_transactions , refreshedTokenMessage: res.locals.refreshedTokenMessage});
-        } catch (error) {
-            res.status(500).json({ error: error.message })
+        if(regExp.test(req.url)) {
+            const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+            if (!adminAuth.flag)
+                return res.status(401).json({ error: adminAuth.cause});
+        } else {
+            const userAuth= verifyAuth(req, res, { authType: "User", username : req.params.username });
+            if (!userAuth.flag)
+                return res.status(401).json({ error: userAuth.cause });
         }
+
+        const user = await User.findOne({ username: req.params.username });
+        if(!user)
+            return res.status(400).json({ error: "user does not exist" });
+
+        const category = await categories.findOne({ type: req.params.category });
+        if(!category)
+            return res.status(400).json({ error: "category does not exist" });
+
+        const result = await transactions.aggregate([
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "type",
+                    foreignField: "type",
+                    as: "categories_info",
+                }
+                },
+            { $unwind: "$categories_info" },
+            { $match: { username: req.params.username, type: req.params.category } }
+        ]);
+
+        if(result.length !== 0)
+            user_transactions = result.map(v => Object.assign({}, {username: v.username,
+                amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
+            return res.status(200).json({data : user_transactions , refreshedTokenMessage: res.locals.refreshedTokenMessage});
+    } catch (error) {
+        res.status(500).json({ error: error.message })
     }
+}
 
 /**
  * Return all transactions made by members of a specific group
