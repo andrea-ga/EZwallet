@@ -1,7 +1,8 @@
+import { type } from "os";
 import { categories, transactions } from "../models/model.js";
 import { Group, User } from "../models/User.js";
 import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./utils.js";
-
+import jwt from 'jsonwebtoken'
 /**
  * Create a new category
   - Request Body Content: An object having attributes `type` and `color`
@@ -51,27 +52,31 @@ export const createCategory = async (req, res) => {
 
           const category = await categories.findOne( {type: previousType});
           if (!category){
-            return res.status(401).json({ message: "Category not found" });
+            return res.status(400).json({ error: "Category not found" });
           }
-          
+          if (!type || !color || type === "" || color === ""){
+            return res.status(400).json({ error : "Invalid request"})
+          }
+          const alreadyPresent = await categories.findOne({type: type});
+            if (alreadyPresent){
+                return res.status(400).json({ error: "Category already present" });
+            }
         
          const count = await transactions.updateMany(
             { type: previousType},
-            { type: type, color: color},
-            { upsert: true, }
+            { type: type},
          );
          
          
          await categories.updateOne(
             {type: previousType}, 
             {type: type, color: color},
-            {upsert: true}
             );
             
-         res.status(200).json({data: { message: "Category updated successfully", count: count.modifiedCount}});
+         res.status(200).json({data: { message: "Category updated successfully", count: count.modifiedCount}, refreshedTokenMessage: res.locals.refreshedTokenMessage});
 
         } catch (error) {
-          res.status(400).json({ error: error.message });
+          res.status(500).json({ error: error.message });
         }
       };
 /**
@@ -83,45 +88,74 @@ export const createCategory = async (req, res) => {
  */
     export const deleteCategory = async (req, res) => {
         try {
-
-          if (!verifyAuth(req, res, { authType: "Admin" })) 
-            return ;
+            const adminAuth = verifyAuth(req, res, {authType: "Admin"});
+          if (adminAuth.flag === false) 
+            return res.status(401).json({ error: adminAuth.cause});
       
-          const cat = req.body.types;
-
+          const { types } = req.body
+            let count = 0;
           // Delete the category from the server/database using the categoryId
-          
+          if(!types || types.length === 0  || types.includes(""))
+          {
+            return res.status(400).json({ error: "Invalid request"});
+          }
           // find all the categories that have the type given in the req.body.type parameter and delete the category
           // ---> if only one category per type or per color no foor loop needed. We have to check if color or type attribute are unique as tuple or as individual attribute
-          for (const c of cat){
-            console.log(c);
-
-
-            // updates all the transaction that have the transaction type as c
-            transactions.updateMany(
-                { type: c},
-                { type: "investment"},
-                {
-                  upsert: true,
-                  
-                }
-             )
-            const cat = await categories.findOne({type: c});
-            if (!cat){
-                return res.status(401).json({message: "Category cat does not exist "});
+          let num_cat = await categories.countDocuments();
+            if (num_cat <= 1){
+                return res.status(400).json({ error: "Cannot delete the only category present"});
             }
-            
-            const deleted = await categories.findOneAndDelete({type: c})
-                                                .catch(()=> {
-                                                        res.status(401).json({message: "Category does not exist"});
-                                                }
-                                                );
-          }
 
-          res.status(200).json( {data: { message: "Category updated successfully" }});
+           if(types.length > num_cat){
+                return res.status(400).json({ error: "Cannot delete more categories than the ones present"});
+                } 
+          for ( let type of types){
+            const cat = await categories.findOne({type: type});
+            if (!cat){
+                return res.status(400).json({message: "Category does not exist"});
+            }
+          }
+        //find all the transactions sorted from the oldest to the newest
+          let foundCategories = await categories.find({}).sort({ createdAt: 1 }).select({type: 1, _id: 0});
+          if(types.length < num_cat)
+          {
+            for (let type of types){
+                
+                let c = await categories.findOneAndDelete({type: type});
+                count += c.deletedCount;
+            }
+        let foundCategories = await categories.find({}).sort({ createdAt: 1 }).limit(1).select({type: 1, _id: 0});
+        for (let type of types){
+                
+            await transactions.updateMany({
+                type: type
+            },{
+                type: foundCategories[0].type
+            })
+                     }
+          }
+          if(types.length === num_cat)
+          {
+            let foundCategories = await categories.find({}).sort({ createdAt: 1 }).limit(1).select({type: 1, _id: 0});
+
+            for (let type of types){
+                
+                if(type!=foundCategories[0].type)
+                    {let c = await categories.findOneAndDelete({type: type});
+                    count += c.deletedCount;
+                    }
+                await transactions.updateMany({
+                    type: type
+                },{
+                    type: foundCategories[0].type
+                })
+                         }
+    }
+
+          res.status(200).json( {data: { message: "Categories deleted", count : types.length } , refreshedTokenMessage: res.locals.refreshedTokenMessage});
           
         } catch (error) {
-          res.status(400).json({ error: error.message });
+          res.status(500).json({ error: error.message });
         }
       };
 
@@ -290,7 +324,7 @@ export const getTransactionByUser = async (req, res) => {
     - empty array is returned if there are no transactions made by the user with the specified category
     - error 401 is returned if the user or the category does not exist
  */
-    export const getTransactionsByUserByCategory = async (req, res) => {
+export const getTransactionsByUserByCategory = async (req, res) => {
         try {
             const regExp = new RegExp("^(\/transactions\/)"); //Admin-only route
             let user_transactions = [];
@@ -478,12 +512,23 @@ export const deleteTransaction = async (req, res) => {
     try {
 
        const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
-       if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
+       if (!userAuth.flag) return res.status(401).json({ error: userAuth.cause });
+        let {_id}= req.body;
+
+        if(!_id || _id==="")
+            return res.status(400).json({message : "Missing _id"});
+        let user = await User.findOne({username : req.params.username});
+        if(!user)
+            return res.status(400).json({message : "User not found"});
+
+        let transactionfound = transactions.findOne({_id : _id});
+        if(!transactionfound  || transactionfound.username !== user.username)
+            return res.status(400).json({message : "Transaction not deleted"});
 
         let data = await transactions.deleteOne({ _id: req.body._id });
-        return res.json({data : "success" , message : res.locals.message });
+        return res.json({data : {message: "Transaction deleted"} ,  refreshedTokenMessage: res.locals.refreshedTokenMessage });
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        res.status(500).json({ error: error.message })
     }
 }
 
@@ -499,14 +544,25 @@ export const deleteTransactions = async (req, res) => {
         try {
     
             const adminAuth = verifyAuth(req, res, {authType: "Admin"})
-            if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
+            if (!adminAuth.flag) 
+                return res.status(401).json({ error: adminAuth.cause});  
   
-            const ids = req.body.ids
-            for (const id of ids){
-                let data = await transactions.deleteOne({ _id: id });
+            const { _ids} = req.body
+            if (!_ids || _ids.length === 0)
+                return res.status(400).json({message : "Missing ids"});
+            
+            for (let id of _ids){
+                if(id==="" )
+                return res.status(400).json({message : "Invalid id"});
+
+                let valid = await transactions.findOne({_id : id});
+                if(!valid)
+                    return res.status(400).json({message : "Invalid id"});
             }
-            return res.json({data : "All the transaction deleted" , message : res.locals.message});
+            await transactions.deleteMany({ _id: { $in: _ids } });
+    
+            return res.json({data : {message :"All transactions deleted"} ,refreshedTokenMessage: res.locals.refreshedTokenMessage});
         } catch (error) {
-            res.status(400).json({ error: error.message })
+            res.status(500).json({ error: error.message })
         }
 }
