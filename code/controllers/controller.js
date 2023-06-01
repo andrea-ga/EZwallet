@@ -417,19 +417,41 @@ export const getTransactionsByGroup = async (req, res) => {
  */
 export const getTransactionsByGroupByCategory = async (req, res) => {
     try {
+        let data = [];
         const name = req.params.name;
         const type = req.params.category;
+        let group = null;
 
-        const group = await Group.findOne({name : name});
+        const regExp = new RegExp("^(\/transactions\/)"); //Admin-only route
+        if(regExp.test(req.url)) {
+            const adminAuth = verifyAuth(req, res, {authType: "Admin"})
+            if (!adminAuth.flag)
+                return res.status(401).json({error : adminAuth.cause});
+
+            group = await Group.findOne({name: name});
+            if (!group)
+                return res.status(400).json({error: "Group not found"});
+        } else {
+            group = await Group.findOne({name: name});
+            if (!group)
+                return res.status(400).json({error: "Group not found"});
+
+            const groupAuth = verifyAuth(req, res, {authType: "Group", emails: group.members});
+            if (!groupAuth.flag)
+                return res.status(401).json({error: groupAuth.cause});
+        }
+
         const category = await categories.findOne({type : type});
-
-        if(!group)
-            return res.status(401).json({message : "Group not found"});
-
         if(!category)
-            return res.status(401).json({message : "Category not found"});
+            return res.status(400).json({error : "Category not found"});
 
-        const groupT = [];
+        const usernames = [];
+        const emails = group.members.map(m => m.email);
+        for(const e of emails) {
+            const user = await User.findOne({email : e});
+            if(user)
+                usernames.push(user.username);
+        }
 
         const result = await transactions.aggregate([
             {
@@ -440,30 +462,17 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
                     as: "categories_info"
                 }
             },
-            { $unwind: "$categories_info" }
+            { $unwind: "$categories_info" },
+            { $match: { type: type , username: { $in: usernames } } }
         ]);
 
-        let data = result.filter(t => t.type === type).map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
+        if(result.length !== 0)
+            data = result.map(v => Object.assign({}, { username: v.username,
+                amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
 
-        const emails = [];
-
-        for(const m of group.members)
-            emails.push(m.email);
-
-        async function check() {
-            for (const t of data) {
-                const user = await User.findOne({username: t.username});
-
-                if (user && emails.some(e => e === user.email))
-                    groupT.push(t);
-            }
-        }
-
-        await check();
-
-        res.status(200).json({data : groupT});
+        return res.status(200).json({data : data, refreshedTokenMessage : res.locals.refreshedTokenMessage});
     } catch (error) {
-        res.status(400).json({ error: error.message })
+        return res.status(500).json({ error: error.message })
     }
 }
 
