@@ -141,13 +141,13 @@ export const getCategories = async (req, res) => {
  */
 export const createTransaction = async (req, res) => {
     try {
-        const userAuth= verifyAuth(req, res, { authType: "User", username: req.params.username });
-        if (!userAuth.flag)
-            return res.status(401).json({error: userAuth.cause});
-
         const param_user = await User.findOne({username: req.params.username});
         if(!param_user)
             return res.status(400).json({error: "route param user does not exist"});
+
+        const userAuth= verifyAuth(req, res, { authType: "User", username: req.params.username });
+        if (!userAuth.flag)
+            return res.status(401).json({error: userAuth.cause});
 
         const { username, amount, type } = req.body;
         if(!username)
