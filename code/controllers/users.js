@@ -3,7 +3,7 @@ import { Group, User } from "../models/User.js";
 import { transactions } from "../models/model.js";
 import { verifyAuth } from "./utils.js";
 import { timingSafeEqual } from "crypto";
-
+import jwt from 'jsonwebtoken'
 /**
  * Return all the users
   - Request Body Content: None
@@ -72,13 +72,11 @@ export const getUser = async (req, res) => {
 export const createGroup = async (req, res) => {
   try {
 
-    let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
 
     const simpleAuth = verifyAuth(req, res, { authType: "Simple" })
     if (!simpleAuth.flag)
       return res.status(401).json({ error: simpleAuth.cause });
-
-
     const { name, memberEmails } = req.body;
     if (!name || !memberEmails || name == "")
       return res.status(400).json({ error: "Invalid request" })
@@ -88,29 +86,24 @@ export const createGroup = async (req, res) => {
     //error 401 is returned if there is already an existing group with the same name
     if (groupFind)
       return res.status(400).json({ error: "Group with the same name already exist" })
-
-    let us = await User.findOne({ refreshToken: req.cookies.refreshToken });
-    let userAlreadyInGroup = await Group.findOne({ 'members.email': us.email })
+      const decodedRefreshToken = jwt.verify(req.cookies.refreshToken, process.env.ACCESS_KEY);
+    let us = await User.findOne({ email: decodedRefreshToken.email});
+    let userAlreadyInGroup = await Group.findOne({ 'members.email': decodedRefreshToken.email })   
     if (userAlreadyInGroup)
       return res.status(400).json({ error: "User creator already present in a group" });
       for (let i = 0; i < memberEmails.length; i++) {
       if (!emailformat.test(memberEmails[i]) || memberEmails[i] == "")
-        return res.status(400).json({ error: "emails not in a valid format" });
+        return res.status(400).json({ error: "Invalid email format" });
     }
-
-    if (!memberEmails.includes(us.email))
-      memberEmails.push(us.email)
-
     let emailnot_founded = [];
     let emailAlready_inGroup = [];
     let counter = 0;
-
     for (let i = 0; i < memberEmails.length; i++) {
       let user = await User.findOne({ email: memberEmails[i] });
-      if (user==undefined)  //if the user is not present in the list of users
+      if (!user)  //if the user is not present in the list of users
       {
         counter += 1;
-        emailnot_founded.push(memberEmails[i]);
+        emailnot_founded.push({email :memberEmails[i]});
       }
       else if (user) {
         let find = await Group.findOne(
@@ -121,22 +114,26 @@ export const createGroup = async (req, res) => {
 
         if (find) {
           counter += 1;
-          emailAlready_inGroup.push(memberEmails[i]);
+          emailAlready_inGroup.push({email :memberEmails[i]});
         }
         else {
-          members.push(user.email);
+          members.push({email : user.email});
         }
       }
     }
-    //-1 because there is always the creator mail
-    if (counter === ((memberEmails.length)-1)) return res.status(400).json({ error: "the `memberEmails` either do not exist or are already in a group" })
+    
+    if (counter === (memberEmails.length)) return res.status(400).json({ error: "the `memberEmails` either do not exist or are already in a group" })
     else {
-
+      if (!memberEmails.includes(us.email))
+        members.push({email : us.email})
       const gr = new Group({ name, members });
       let group = await gr.save();
        return  res.status(200).json({
           data: {
-            group,
+            group : { 
+              name : group.name,
+              members : group.members.map(e => ({email : e.email}))
+            },
             "membersNotFound": emailnot_founded,
             "alreadyInGroup": emailAlready_inGroup
           },
@@ -163,7 +160,7 @@ export const getGroups = async (req, res) => {
     if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause });
 
     const group = await Group.find();
-    let groups = group.map(e => ({ "name": e.name, "members": e.members }));
+    let groups = group.map(e => ({ "name": e.name, "members": e.members.map(c =>({ email : c.email})  ) }));
     res.status(200).json({ data: groups, refreshedTokenMessage: res.locals.refreshedTokenMessage });
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -185,14 +182,14 @@ export const getGroup = async (req, res) => {
     if (!simpleAuth.flag) return res.status(401).json({ error: simpleAuth.cause });
     let adminAuth = verifyAuth(req, res, { authType: "Admin" });
     if (adminAuth.flag) {
-      if (!group) res.status(400).json({ error: "Group not found" });
+      if (!group) return res.status(400).json({ error: "Group not found" });
     }
     else {
       if (!group) res.status(400).json({ error: "Group not found" });
       const groupAuth = verifyAuth(req, res, { authType: "Group", emails: group.members });
       if (!groupAuth.flag) return res.status(401).json({ error: groupAuth.cause });
     }
-    res.status(200).json({ data: group, refreshedTokenMessage: res.locals.refreshedTokenMessage });
+    res.status(200).json({ data: {group : {name : group.name , members : group.members.map(e => ({email : e.email}))}}, refreshedTokenMessage: res.locals.refreshedTokenMessage });
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -212,22 +209,21 @@ export const getGroup = async (req, res) => {
 export const addToGroup = async (req, res) => {
   try {
 
-    let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
 
-    const reAd = new RegExp("^.+/api/groups/[^/]+/insert$");
+    const reAd = new RegExp("^.*/groups/[^/]+/insert$");
 
-    const reUs = new RegExp("^.+/api/groups/[^/]+/add$");
+    const reUs = new RegExp("^.*/groups/[^/]+/add$");
     let groupfind;
-
-
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
-    if (adminAuth.flag && reAd.test(req.path)) // regexp for the URL 
+    
+    if (adminAuth.flag && reAd.test(req.url)) // regexp for the URL 
     {
       groupfind = await Group.findOne({ name: req.params.name });
       if (!groupfind)
         return res.status(400).json({ error: "Group not found" });
     }
-    else if (reUs.test(req.path)) //regexp for the URL
+    else if (reUs.test(req.url)) //regexp for the URL
     {
       groupfind = await Group.findOne({ name: req.params.name });
       if (!groupfind) 
@@ -240,29 +236,25 @@ export const addToGroup = async (req, res) => {
     {
       return res.status(401).json({ error: "Unauthorized" });
     }
-
     if (!req.body.emails)
       return res.status(400).json({ error: "Bad request" });
     //--> to be inserted?   || req.body.emails.length==0
-
     const membersNotFound = [];
     const alreadyInGroup = [];
     const newMembers = [];
-
     for (let m of req.body.emails) {
       if (m == "" || !emailformat.test(m))
         return res.status(400).json({ error: "Bad request" });
+      
       let found = await User.findOne({ email: m });
       let already = await Group.findOne({ members: { $elemMatch: { email: m } } });
-
       if (!found)
-        membersNotFound.push(m);
+        membersNotFound.push({ email : m });
       else if (already)
-        alreadyInGroup.push(m);
+        alreadyInGroup.push({ email : m });
       else
-        newMembers.push(found);
+        newMembers.push({email : m });
     }
-
     if (newMembers.length === 0)
       return res.status(400).json({ error: "All emails wrong or already used" });
 
@@ -275,9 +267,11 @@ export const addToGroup = async (req, res) => {
       },
       { new: true }
     );
-
-    const finalGroup = {
-      group: group,
+      
+      const finalGroup = {
+      group: {name : group.name
+        ,
+        members : group.members.map(e => ({email : e.email})) },
       alreadyInGroup: alreadyInGroup,
       membersNotFound: membersNotFound
     }
@@ -300,23 +294,22 @@ export const addToGroup = async (req, res) => {
  */
 export const removeFromGroup = async (req, res) => {
   try {
-    const reAd = new RegExp("^.+/api/groups/[^/]+/pull$");
-    const reUs = new RegExp("^.+/api/groups/[^/]+/remove$");
-    let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    const reAd = new RegExp("^.*groups/[^/]+/pull$");
+    const reUs = new RegExp("^.*groups/[^/]+/remove$");
+    let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
     const cookie = req.cookies
 
     const name = req.params.name;
     
-
     let group = await Group.findOne({ name: req.params.name });
     let adminAuth = verifyAuth(req, res, { authType: "Admin" });
-
-    if (adminAuth.flag && reAd.test(req.path)) // regexp for the URL 
+    if (adminAuth.flag && reAd.test(req.url)) // regexp for the URL 
     {
+      
       if (!group)
          return res.status(400).json({ error: "Group not found" });
     }
-    else if (reUs.test(req.path)) //regexp for the URL
+    else if (reUs.test(req.url)) //regexp for the URL
     {
       if (!group) 
         return res.status(400).json({ error: "Group not found" })
@@ -324,25 +317,24 @@ export const removeFromGroup = async (req, res) => {
       if (!groupAuth.flag)
          return res.status(401).json({ error: groupAuth.cause });
     }
-    else {
-      return res.status(401).json({ error: "Unauthorized" });
+    else {     
+       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const members = req.body.emails;
     if (!members)  //  || memebers = []
       return res.status(400).json({ error: "Bad request" });
-
-
     let membersNotFound = [];
     let NotInGroup = [];
 
     if (group.members.length == 1)
-      return res.status(400).json({ error: "The group contain only one user" })
+      return res.status(400).json({ error: "Group contains only one member" })
     let count = 0;
     for (let i = 0; i < members.length; i++) {
       if (members[i] == "" || !emailformat.test(members[i]))
         return res.status(400).json({ error: "Bad request" });
       let user = await User.findOne({ "email": members[i] });
+
       if (!user) {//if the email doesn't exist
         count++;
         membersNotFound.push(members[i]);
@@ -354,6 +346,7 @@ export const removeFromGroup = async (req, res) => {
             group.members = group.members.filter((e) => e.email != m.email);
             flag = 1;
             break;
+            
           }
         }
         if (flag==0) {
@@ -364,21 +357,25 @@ export const removeFromGroup = async (req, res) => {
 
     }
     if (count == members.length) 
-      return res.status(400).json({ message: "all the `memberEmails` either do not exist or are not in the group" })
-    if(group.members.length==0 )
+      return res.status(400).json({ error: "all the `memberEmails` either do not exist or are not in the group" })
+    if(group.members.length==0)
     {
       let group2 = await Group.findOne({ name: req.params.name });
-      group.members.push(group2.members[0]);   
+      group.members.push({email :group2.members[0].email});   
     }
     let done = await Group.replaceOne({ "name": req.params.name  }, {
       "name": name,
       "members": group.members
-    });  //replace the older group with the new one
+    });  //replace the older group with the new one 
     return res.status(200).json({
       data: {
-        "group": group,
-        "NotInGroup": NotInGroup,
-        "MembersNotFound": membersNotFound
+        "group": {
+          name : group.name,
+          members : group.members.map((e) => ({email : e.email}))
+        },
+        "membersNotFound": membersNotFound,
+        "notInGroup": NotInGroup
+        
       }
       , refreshedTokenMessage: res.locals.refreshedTokenMessage
     })
@@ -400,19 +397,16 @@ export const removeFromGroup = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    let emailformat = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+   let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
 
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
     if (!adminAuth.flag)
       return res.status(401).json({ error: adminAuth.cause });
 
-
-
     //let countDeletionFromGroups = 0; //useless
-    let removedFromGroup = false;
-    let groupsIdArr = [];
-
-    let email = req.body.email;
+  let removed = false;
+	let grouplist ;
+	let email = req.body.email;
 
     if (email == "" || !emailformat.test(email))
       return res.status(400).json({ error: "Bad request" });
@@ -423,48 +417,29 @@ export const deleteUser = async (req, res) => {
     if (!userFound) {
       return res.status(400).json({ error: "User not found" });
     }
-
-    // delete transactions if exists any
-    const deletedTransactions = await transactions.remove({ username: userFound.username });
-
-    // find the groups and push all the ids in the arr
-    const t = Group.find(
+    if(userFound.role == "Admin"){
+      return res.status(400).json({ error: "Admin can't be removed" });
+    }
+	const deletedTransactions = await transactions.deleteMany({ username: userFound.username });
+	let gf = await Group.findOne(
       {
         "members.email": email
-      }).then((result) => {
-        result.map((element) => {
-          groupsIdArr.push(element._id.toString());
-          removedFromGroup = true;
-        })
-      });
-
-    if (groupsIdArr.length > 0)
-      removedFromGroup = true;
-    // update the Group list of memebers so remove the member 
-    const test = await Group.updateMany(
-      { members: { email: email } },
-      { $pull: { members: { email: email } } },
-    );
-
-    // delete user from DB after all checks and the delete before
-    await User.deleteOne({ email: email });
-
-
-
-    // delete the group if in the previously ones found groups there are no members
-    for (let v in groupsIdArr) {
-      let x = await Group.findOneAndDelete(
-        {
-          $and: [
-            { _id: groupsIdArr[v] },
-            { $where: "this.members.length == 0" }]
-        }
-      );
-
-    }
-
-
-    res.status(200).json({ data: { deletedTransactions: deletedTransactions.deletedCount, removedFromGroup: removedFromGroup }, refreshToken: res.locals.refreshedTokenMessage });
+      })
+	  if(gf)
+	  {
+		removed=true
+		grouplist = gf.members.filter((e) => e.email!= email)
+		if(grouplist.length==0) 
+		{
+		await Group.deleteOne({ name : gf.name})
+		}
+		else 
+		{
+		await Group.updateOne({name : gf.name},{members : grouplist})
+		}
+	  }
+    await User.deleteOne({email : email})
+	  res.status(200).json({ data: { deletedTransactions: deletedTransactions.deletedCount, removedFromGroup: removed }, refreshToken: res.locals.refreshedTokenMessage });
 
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -489,7 +464,7 @@ export const deleteGroup = async (req, res) => {   //still to implement Admin an
     const groupFind = await Group.findOne({ name: name });
     //console.log(name);  //DEBUG
     if (!groupFind) return res.status(400).json({ error: "Group not found" })
-    Group.deleteOne({ name: name }).then(gr => res.status(200).json({ data: "Group deleted successfully", refreshToken: res.locals.refreshedTokenMessage }))
+    Group.deleteOne({ name: name }).then(gr => res.status(200).json({ data: {message : "Group deleted successfully"}, refreshToken: res.locals.refreshedTokenMessage }))
       .catch(err => { throw err })
   } catch (err) {
     res.status(500).json({ error: err.message })

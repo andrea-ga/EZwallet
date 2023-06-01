@@ -67,7 +67,7 @@ export const handleDateFilterParams = (req) => {
  *  Refreshes the accessToken if it has expired and the refreshToken is still valid
  */
 export const verifyAuth = (req, res, info) => {
-    const cookie = req.cookies
+    const cookie = req.cookies;
     if (!cookie.accessToken || !cookie.refreshToken) {
         return { flag: false, cause: "Unauthorized" };
     }
@@ -127,7 +127,6 @@ export const verifyAuth = (req, res, info) => {
         
         return { flag: true, cause: "authorized" }
     } catch (err) {
-        console.log(err.name)
         if (err.name === "TokenExpiredError") {
             try {
                 const refreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY)
