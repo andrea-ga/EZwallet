@@ -127,7 +127,6 @@ export const verifyAuth = (req, res, info) => {
         
         return { flag: true, cause: "authorized" }
     } catch (err) {
-        console.log(err.name)
         if (err.name === "TokenExpiredError") {
             try {
                 const refreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY)

@@ -133,7 +133,7 @@ test("User creates a group", async () => {
   let res = await request(app).post("/api/groups").send({name : "test_group", memberEmails : [list_of_users[0].email, list_of_users[1].email]})
       .set("Cookie" , "accessToken=" + generateToken(list_of_users[0],'1h')+"; refreshToken=" + generateToken(list_of_users[0],'1h'))
   expect(res.status).toBe(200)
-  expect(res.body.data).toStrictEqual({group :{name : "test_group", members : [list_of_users[0].email, list_of_users[1].email]} ,membersNotFound : [], alreadyInGroup : []});
+  expect(res.body.data).toStrictEqual({group :{name : "test_group", members : [{email :list_of_users[0].email},{email : list_of_users[1].email}]} ,membersNotFound : [], alreadyInGroup : []});
 })
 
 test("User creates a group with mails has a wrong format", async () => {
@@ -156,7 +156,7 @@ test("User create a group with only the creator present" , async () => {
   let res = await request(app).post("/api/groups").send({name : "test_group", memberEmails : ["ciao@mail.com", "cicic@mail.com",list_of_users[0].email]})
   .set("Cookie" , "accessToken=" + generateToken(list_of_users[0],'1h')+"; refreshToken=" + generateToken(list_of_users[0],'1h'))
   expect(res.status).toBe(200)
-  expect(res.body.data).toStrictEqual({group : { name : "test_group", members : [list_of_users[0].email]}, membersNotFound : ["ciao@mail.com","cicic@mail.com"], alreadyInGroup : []});
+  expect(res.body.data).toStrictEqual({group : { name : "test_group", members : [{email : list_of_users[0].email}]}, membersNotFound : [{email : "ciao@mail.com"},{email :"cicic@mail.com"}], alreadyInGroup : []});
 })
 test("User create a group with a wrong name" , async () => {  
   
