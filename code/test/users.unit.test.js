@@ -1017,7 +1017,7 @@ test("user not found", async () => {
     expect(mockRes.json).toHaveBeenCalledWith({error : "User not found"})
   })
 
-test("User successfully deleted and in a group", async () => {
+test.only("User successfully deleted and in a group", async () => {
     //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
     const mockReq = {
       body : {

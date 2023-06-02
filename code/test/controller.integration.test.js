@@ -156,11 +156,11 @@ describe("updateCategory", () => {
         let type1 = "type1"
         let res = await request(app).patch(`/api/categories/${type1}`).send({type: "Type1", color: "color6"}).set("Cookie", "accessToken=" + generateToken(list_of_users[2], "1h") + "; refreshToken=" + generateToken(list_of_users[2], "1h"));
 
-        let transaction = await transactions.find({type: type1})
+        
         expect(res.status).toBe(200);
-        expect(res.body.message).toStrictEqual("Category updated")
+        expect(res.body).toStrictEqual({data : {message : "Category updated successfully", count : 2}})
         let new_transactions = await transactions.find({type: "Type1"})
-        expect(new_transactions.length).toStrictEqual(transaction.length)
+        expect(new_transactions.length).toStrictEqual(2)
         let find_category = await categories.findOne({type: "Type1"})
         expect(find_category).not.toBe(null)
     })
@@ -505,7 +505,7 @@ describe("deleteTransaction", () => {
         await transactions.create({username: "tester", amount: 12, type: "type3", date : new Date("2021-01-03")})
         await transactions.create({username: "tester", amount: 13, type: "type4", date : new Date("2021-01-04")})
         await transactions.create({username: "tester", amount: 14, type: "type5", date : new Date("2021-01-05")})
-        await transactions.create({username: "tester2", amount: 15, type: "type1", date : new Date("2021-01-06")})
+        await transactions.create({_id :"6478f67648e93a914f316ca5",username: "tester2", amount: 15, type: "type1", date : new Date("2021-01-06")})
         await transactions.create({username: "tester2", amount: 16, type: "type2", date : new Date("2021-01-07")})
         await transactions.create({username: "tester2", amount: 17, type: "type3", date : new Date("2021-01-08")})
         await transactions.create({username: "tester3",amount: 18, type: "type4", date : new Date("2021-01-09")}) 
@@ -516,7 +516,7 @@ describe("deleteTransaction", () => {
     })
 
     test('Invalid user', async () => {
-        username = "tester2"
+        let username = "tester2"
         const res = await request(app).delete(`/api/users/${username}/transactions`).set( "Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") + "; refreshToken=" + generateToken(list_of_users[0], "1h"))
         .send({_id : 13 });
 
@@ -525,13 +525,48 @@ describe("deleteTransaction", () => {
     })
 
     test("req body not present", async () => {
-        username = "tester"
+        let username = "tester"
         const res = await request(app).delete(`/api/users/${username}/transactions`).set( "Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") + "; refreshToken=" + generateToken(list_of_users[0], "1h"))
     
         expect(res.status).toBe(400);
-        expect(res.body.error).toBe("Missing id");
+        expect(res.body.error).toBe("Missing _id");
     })
 
+
+    test("transaction not found", async () => {
+
+        let username = "tester"
+        const res = await request(app).delete(`/api/users/${username}/transactions`).set( "Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") + "; refreshToken=" + generateToken(list_of_users[0], "1h"))
+        .send({_id : "6478f67648e93a914f316ca8" });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe("Transaction not deleted");
+    })
+
+
+    test("User try to delete a transaction created by another user ", async () => {
+    
+        let username = "tester"
+        let myId = "6478f67648e93a914f316ca5"
+        const res = await request(app).delete(`/api/users/${username}/transactions`).set( "Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") + "; refreshToken=" + generateToken(list_of_users[0], "1h"))
+        .send({_id : myId });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe("Transaction not deleted");
+    })
+
+    test("User try to delete a transaction created by himself ", async () => {
+        
+            let username = "tester2"
+            let myId = "6478f67648e93a914f316ca5"
+            const res = await request(app).delete(`/api/users/${username}/transactions`).set( "Cookie", "accessToken=" + generateToken(list_of_users[1], "1h") + "; refreshToken=" + generateToken(list_of_users[1], "1h"))
+            .send({_id : myId });
+    
+            expect(res.status).toBe(200);
+            expect(res.body).toStrictEqual({data : {message: "Transaction deleted"}} );
+            let find  = await transactions.findById(myId)
+            expect(find).toBe(null)
+    })
 })
 
 describe("deleteTransactions", () => { 
@@ -548,8 +583,8 @@ describe("deleteTransactions", () => {
         await transactions.create({username: "tester", amount: 12, type: "type3", date : new Date("2021-01-03")})
         await transactions.create({username: "tester", amount: 13, type: "type4", date : new Date("2021-01-04")})
         await transactions.create({username: "tester", amount: 14, type: "type5", date : new Date("2021-01-05")})
-        await transactions.create({username: "tester2", amount: 15, type: "type1", date : new Date("2021-01-06")})
-        await transactions.create({username: "tester2", amount: 16, type: "type2", date : new Date("2021-01-07")})
+        await transactions.create({_id :"6478f67648e93a914f316ca5", username: "tester2", amount: 15, type: "type1", date : new Date("2021-01-06")})
+        await transactions.create({_id :"6478f67648e93a914f316ca6",username: "tester2", amount: 16, type: "type2", date : new Date("2021-01-07")})
         await transactions.create({username: "tester2", amount: 17, type: "type3", date : new Date("2021-01-08")})
         await transactions.create({username: "tester3",amount: 18, type: "type4", date : new Date("2021-01-09")}) 
     })
@@ -579,23 +614,29 @@ describe("deleteTransactions", () => {
         .send({_ids : ["" ]});
 
         expect(res.status).toBe(400);
-        expect(res.body.error).toBe("Invalid id");    
+        expect(res.body.error).toBe("Invalid id"); 
     })
 
-    test.skip("Id not found" , async () => {
+    test("Id not found" , async () => {
     const res = await request(app).delete(`/api/transactions`).set( "Cookie", "accessToken=" + generateToken(list_of_users[2], "1h") + "; refreshToken=" + generateToken(list_of_users[2], "1h"))
-    .send({_ids : ["dj4djor" ]});
+    .send({_ids : ["6578f67648e93a914f316ca5" ]});
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Invalid id");
     })
 
 
-    test.skip("Transaction correctly deleted", async () => {
-        const res = await request(app).delete(`/api/transactions`).set( "Cookie", "accessToken=" + generateToken(list_of_users[2], "1h") + "; refreshToken=" + generateToken(list_of_users[2], "1h"))
-        .send({_ids : ["eferttg" ]});
+    test("Transaction correctly deleted", async () => {
+        let myid = "6478f67648e93a914f316ca5" 
+        let myid2 = "6478f67648e93a914f316ca6" 
 
+        const res = await request(app).delete(`/api/transactions`).set( "Cookie", "accessToken=" + generateToken(list_of_users[2], "1h") + "; refreshToken=" + generateToken(list_of_users[2], "1h"))
+        .send({_ids : [myid, myid2]});
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe({data : {message :"All transactions deleted"} });
+        expect(res.body).toStrictEqual({data : {message :"All transactions deleted"} });
+        let ff = await transactions.findOne({_id: myid})
+        expect(ff).toBe(null)
+        let ff2 = await transactions.findOne({_id: myid2})
+        expect(ff2).toBe(null)
     })
 })
