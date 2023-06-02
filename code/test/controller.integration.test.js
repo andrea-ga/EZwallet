@@ -5,7 +5,7 @@ import mongoose, { Model } from 'mongoose';
 import dotenv from 'dotenv';
 import jwt from "jsonwebtoken";
 import {verifyAuth} from "../controllers/utils.js";
-import {createCategory, createTransaction, getCategories} from "../controllers/controller.js";
+import {createCategory, createTransaction, getAllTransactions, getCategories} from "../controllers/controller.js";
 import {User} from "../models/User.js";
 
 dotenv.config();
@@ -276,9 +276,67 @@ describe("createTransaction", () => {
     });
 })
 
-describe("getAllTransactions", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+describe("getAllTransactions", () => {
+
+    const list_of_categories = [{type: "type1", color: "color1"},
+        {type: "type2", color: "color2"}, {type: "type3", color: "color3"}, {type: "type4", color: "color4"}];
+
+    const list_of_transactions = [
+        {username: "tester", amount: 10, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+        {username: "tester", amount: 20, type: "type2", date: "2023-05-14T14:27:59.045Z", color: "color2"},
+        {username: "tester", amount: 30, type: "type3", date: "2023-05-14T14:27:59.045Z", color: "color3"},
+        {username: "tester", amount: 40, type: "type4", date: "2023-05-14T14:27:59.045Z", color: "color4"}];
+
+    const list_of_users = [
+        {username: "tester", email: "test@test.com", password: "tester", role: "Regular"},
+        {username: "tester3", email: "test3@test.com", password: "tester3", role: "Admin"}];
+
+    beforeAll(async () => {
+        for (const c of list_of_users)
+        {   await User.create( c )}
+
+        for (const c of list_of_categories)
+        {   await categories.create( c )}
+
+        for (const c of list_of_categories)
+        {   await transactions.create( c )}
+    })
+    afterAll(async () => {
+        await User.deleteMany({})
+        await categories.deleteMany({})
+        await transactions.deleteMany({});
+    })
+
+    test('should return empty list if there are no transactions', async () => {
+        await transactions.deleteMany({});
+
+        const res = await request(app).get(`/api/transactions`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[1], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[1], "1h"));
+
+        expect(res.status).toBe(200);
+        expect(res.body.data).toStrictEqual([]);
+
+        for(const t of list_of_transactions)
+        {   await transactions.create(t) }
+    });
+
+    test('should retrieve list of all transactions', async () => {
+        const res = await request(app).get(`/api/transactions`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[1], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[1], "1h"));
+
+        expect(res.status).toBe(200);
+        expect(res.body).toStrictEqual({data : list_of_transactions});
+    });
+
+    test('Unauthorized access', async () => {
+        const res = await request(app).get(`/api/transactions`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+
+        expect(res.status).toBe(401);
+        expect(res.body.error).toStrictEqual("Unauthorized");
     });
 })
 
