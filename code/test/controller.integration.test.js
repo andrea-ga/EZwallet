@@ -458,16 +458,24 @@ describe("getTransactionsByUserByCategory", () => {
     });
 
     test('admin route - should return 400 if user does not exist', async () => {
+        const nouser = {username: "nouser", email: "nouser@test.com", password: "nouser", role: "Admin"};
+
         const res = await request(app)
-            .get(`/api/transactions/users/nouser/category/${list_of_categories[0].type}`);
+            .get(`/api/transactions/users/nouser/category/${list_of_categories[0].type}`)
+            .set("Cookie", "accessToken=" + generateToken(nouser, "1h")
+                + "; refreshToken=" + generateToken(nouser, "1h"));
 
         expect(res.status).toBe(400);
         expect(res.body.error).toStrictEqual("user does not exist");
     });
 
     test('user route - should return 400 if user does not exist', async () => {
+        const nouser = {username: "nouser", email: "nouser@test.com", password: "nouser", role: "Admin"};
+
         const res = await request(app)
-            .get(`/api/users/nouser/transactions/category/${list_of_categories[0].type}`);
+            .get(`/api/users/nouser/transactions/category/${list_of_categories[0].type}`)
+            .set("Cookie", "accessToken=" + generateToken(nouser, "1h")
+                + "; refreshToken=" + generateToken(nouser, "1h"));
 
         expect(res.status).toBe(400);
         expect(res.body.error).toStrictEqual("user does not exist");
