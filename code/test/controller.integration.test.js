@@ -305,7 +305,7 @@ describe("getAllTransactions", () => {
         for (const c of list_of_categories)
         {   await categories.create( c )}
 
-        for (const c of list_of_categories)
+        for (const c of list_of_transactions)
         {   await transactions.create( c )}
     })
     afterAll(async () => {
@@ -377,7 +377,7 @@ describe("getTransactionsByUserByCategory", () => {
         for (const c of list_of_categories)
         {   await categories.create( c )}
 
-        for (const c of list_of_categories)
+        for (const c of list_of_transactions)
         {   await transactions.create( c )}
     })
     afterAll(async () => {
