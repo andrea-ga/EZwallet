@@ -5,7 +5,13 @@ import mongoose, { Model } from 'mongoose';
 import dotenv from 'dotenv';
 import jwt from "jsonwebtoken";
 import {verifyAuth} from "../controllers/utils.js";
-import {createCategory, createTransaction, getAllTransactions, getCategories} from "../controllers/controller.js";
+import {
+    createCategory,
+    createTransaction,
+    getAllTransactions,
+    getCategories,
+    getTransactionsByUserByCategory
+} from "../controllers/controller.js";
 import {User} from "../models/User.js";
 
 dotenv.config();
@@ -283,9 +289,9 @@ describe("getAllTransactions", () => {
 
     const list_of_transactions = [
         {username: "tester", amount: 10, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
-        {username: "tester", amount: 20, type: "type2", date: "2023-05-14T14:27:59.045Z", color: "color2"},
+        {username: "tester3", amount: 20, type: "type2", date: "2023-05-14T14:27:59.045Z", color: "color2"},
         {username: "tester", amount: 30, type: "type3", date: "2023-05-14T14:27:59.045Z", color: "color3"},
-        {username: "tester", amount: 40, type: "type4", date: "2023-05-14T14:27:59.045Z", color: "color4"}];
+        {username: "tester3", amount: 40, type: "type4", date: "2023-05-14T14:27:59.045Z", color: "color4"}];
 
     const list_of_users = [
         {username: "tester", email: "test@test.com", password: "tester", role: "Regular"},
@@ -346,9 +352,145 @@ describe("getTransactionsByUser", () => {
     });
 })
 
-describe("getTransactionsByUserByCategory", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+describe("getTransactionsByUserByCategory", () => {
+
+    const list_of_categories = [{type: "type1", color: "color1"},
+        {type: "type2", color: "color2"}, {type: "type3", color: "color3"}, {type: "type4", color: "color4"}];
+
+    const list_of_transactions = [
+        {username: "tester", amount: 10, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+        {username: "tester", amount: 20, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+        {username: "tester3", amount: 30, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+        {username: "tester", amount: 40, type: "type4", date: "2023-05-14T14:27:59.045Z", color: "color4"},
+        {username: "tester3", amount: 60, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+        {username: "tester", amount: 70, type: "type2", date: "2023-05-14T14:27:59.045Z", color: "color2"},];
+
+    const list_of_users = [
+        {username: "tester", email: "test@test.com", password: "tester", role: "Regular"},
+        {username: "tester3", email: "test3@test.com", password: "tester3", role: "Admin"}];
+
+    beforeAll(async () => {
+        for (const c of list_of_users)
+        {   await User.create( c )}
+
+        for (const c of list_of_categories)
+        {   await categories.create( c )}
+
+        for (const c of list_of_categories)
+        {   await transactions.create( c )}
+    })
+    afterAll(async () => {
+        await User.deleteMany({})
+        await categories.deleteMany({})
+        await transactions.deleteMany({});
+    })
+
+    test('admin route - should return empty list if there are no transactions for that user and category', async () => {
+        await transactions.deleteMany({});
+
+        const res = await request(app)
+            .get(`/api/transactions/users/${list_of_users[1].username}/category/${list_of_categories[0].type}`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[1], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[1], "1h"));
+
+        expect(res.status).toBe(200);
+        expect(res.body.data).toStrictEqual([]);
+
+        for(const t of list_of_transactions)
+        {   await transactions.create(t) }
+    });
+
+    test('admin route - should return list of transactions for that user and category', async () => {
+        const res = await request(app)
+            .get(`/api/transactions/users/${list_of_users[1].username}/category/${list_of_categories[0].type}`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[1], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[1], "1h"));
+
+        expect(res.status).toBe(200);
+        expect(res.body.data).toStrictEqual(
+            [{username: "tester3", amount: 30, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+            {username: "tester3", amount: 60, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"}]);
+    });
+
+    test('user route - should return empty list if there are no transactions for that user and category', async () => {
+        await transactions.deleteMany({});
+
+        const res = await request(app)
+            .get(`/api/users/${list_of_users[0].username}/transactions/category/${list_of_categories[0].type}`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+
+        expect(res.status).toBe(200);
+        expect(res.body.data).toStrictEqual([]);
+
+        for(const t of list_of_transactions)
+        {   await transactions.create(t) }
+    });
+
+    test('user route - should return list of transactions for that user and category', async () => {
+        const res = await request(app)
+            .get(`/api/users/${list_of_users[0].username}/transactions/category/${list_of_categories[0].type}`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+
+        expect(res.status).toBe(200);
+        expect(res.body.data).toStrictEqual(
+            [{username: "tester", amount: 10, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"},
+                {username: "tester", amount: 20, type: "type1", date: "2023-05-14T14:27:59.045Z", color: "color1"}]);
+    });
+
+    test('admin route - should return 401 if user is not authorized', async () => {
+        const res = await request(app)
+            .get(`/api/transactions/users/${list_of_users[0].username}/category/${list_of_categories[0].type}`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+
+        expect(res.status).toBe(401);
+        expect(res.body.error).toStrictEqual("Unauthorized");
+    });
+
+    test('user route - should return 401 if user is not authorized', async () => {
+        const res = await request(app)
+            .get(`/api/users/${list_of_users[0].username}/transactions/category/${list_of_categories[0].type}`);
+
+        expect(res.status).toBe(401);
+        expect(res.body.error).toStrictEqual("Unauthorized");
+    });
+
+    test('admin route - should return 400 if user does not exist', async () => {
+        const res = await request(app)
+            .get(`/api/transactions/users/nouser/category/${list_of_categories[0].type}`);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toStrictEqual("user does not exist");
+    });
+
+    test('user route - should return 400 if user does not exist', async () => {
+        const res = await request(app)
+            .get(`/api/users/nouser/transactions/category/${list_of_categories[0].type}`);
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toStrictEqual("user does not exist");
+    });
+
+    test('admin route - should return 400 if category does not exist', async () => {
+        const res = await request(app)
+            .get(`/api/transactions/users/${list_of_users[1].username}/category/nocategory`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[1], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[1], "1h"));
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toStrictEqual("category does not exist");
+    });
+
+    test('user route - should return 400 if category does not exist', async () => {
+        const res = await request(app)
+            .get(`/api/users/${list_of_users[0].username}/transactions/category/nocategory`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h")
+                + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toStrictEqual("category does not exist");
     });
 })
 

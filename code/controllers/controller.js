@@ -295,6 +295,10 @@ export const getTransactionsByUserByCategory = async (req, res) => {
         const regExp = new RegExp("^(\/transactions\/)"); //Admin-only route
         let user_transactions = [];
 
+        const user = await User.findOne({ username: req.params.username });
+        if(!user)
+            return res.status(400).json({ error: "user does not exist" });
+
         if(regExp.test(req.url)) {
             const adminAuth = verifyAuth(req, res, { authType: "Admin" });
             if (!adminAuth.flag)
@@ -304,10 +308,6 @@ export const getTransactionsByUserByCategory = async (req, res) => {
             if (!userAuth.flag)
                 return res.status(401).json({ error: userAuth.cause });
         }
-
-        const user = await User.findOne({ username: req.params.username });
-        if(!user)
-            return res.status(400).json({ error: "user does not exist" });
 
         const category = await categories.findOne({ type: req.params.category });
         if(!category)
