@@ -242,10 +242,11 @@ describe("createTransaction", () => {
     });
 
     test('route param user not found', async () => {
+        const nouser = {username: "nouser", email: "nouser@test.com", password: "nouser", role: "Regular"};
         const res = await request(app).post(`/api/users/nouser/transactions`)
             .send({username: "tester", amount: 10, type: "type1"})
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+            .set("Cookie", "accessToken=" + generateToken(nouser, "1h") +
+                "; refreshToken=" + generateToken(nouser, "1h"));
 
         expect(res.status).toBe(400);
         expect(res.body.error).toStrictEqual("route param user does not exist");
