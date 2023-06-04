@@ -277,7 +277,7 @@ export const getAllTransactions = async (req, res) => {
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
 
-export const getTransactionByUser = async (req, res) => {
+export const getTransactionsByUser = async (req, res) => {
     try {
         //regexp fot the url /api/transactions/users/Mario
         let adminURL = /^\/transactions\/users\/([^/]+)$/;
