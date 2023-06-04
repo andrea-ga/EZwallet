@@ -345,8 +345,9 @@ export const getTransactionsByUserByCategory = async (req, res) => {
  */
 export const getTransactionsByGroup = async (req, res) => {
     try {
+        let data = [];
         const name = req.params.name;
-        const emails = [];
+        let group = null;
 
         const regExp = new RegExp("^(\/transactions\/)"); //Admin-only route
         if(regExp.test(req.url)) {
@@ -354,26 +355,26 @@ export const getTransactionsByGroup = async (req, res) => {
             if (!adminAuth.flag)
                 return res.status(401).json({error : adminAuth.cause});
 
-            const group = await Group.findOne({name: name});
+            group = await Group.findOne({name: name});
             if (!group)
                 return res.status(400).json({error: "Group not found"});
-
-            for(const m of group.members)
-                emails.push(m.email);
         } else {
-            const group = await Group.findOne({name: name});
+            group = await Group.findOne({name: name});
             if (!group)
                 return res.status(400).json({error: "Group not found"});
 
             const groupAuth = verifyAuth(req, res, {authType: "Group", emails: group.members});
             if (!groupAuth.flag)
                 return res.status(401).json({error: groupAuth.cause});
-
-            for(const m of group.members)
-                emails.push(m.email);
         }
 
-        const groupT = [];
+        const usernames = [];
+        const emails = group.members.map(m => m.email);
+        for(const e of emails) {
+            const user = await User.findOne({email : e});
+            if(user)
+                usernames.push(user.username);
+        }
 
         const result = await transactions.aggregate([
             {
@@ -384,24 +385,15 @@ export const getTransactionsByGroup = async (req, res) => {
                     as: "categories_info"
                 }
             },
-            { $unwind: "$categories_info" }
+            { $unwind: "$categories_info" },
+            { $match: { username: { $in: usernames } } }
         ]);
 
-        const data = result.map(v => Object.assign({}, {username: v.username, amount: v.amount,
-            type: v.type, color: v.categories_info.color, date: v.date }));
+        if(result.length !== 0)
+            data = result.map(v => Object.assign({}, {username: v.username, amount: v.amount,
+                type: v.type, color: v.categories_info.color, date: v.date }));
 
-        async function check() {
-            for (const t of data) {
-                const user = await User.findOne({username: t.username});
-
-                if (user && emails.some(e => e === user.email))
-                    groupT.push(t);
-            }
-        }
-
-        await check();
-
-        return res.status(200).json({data : groupT, refreshedTokenMessage : res.locals.refreshedTokenMessage});
+        return res.status(200).json({data : data, refreshedTokenMessage : res.locals.refreshedTokenMessage});
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
