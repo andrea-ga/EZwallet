@@ -18,6 +18,10 @@ beforeAll(async () => {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     });
+    User.deleteMany({});
+    Group.deleteMany({});
+    categories.deleteMany({});
+    transactions.deleteMany({});
 
 });
 

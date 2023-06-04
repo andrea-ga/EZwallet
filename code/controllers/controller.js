@@ -9,8 +9,31 @@ import jwt from 'jsonwebtoken'
   - Response `data` Content: An object having attributes `type` and `color`
  */
 export const createCategory = async (req, res) => {
-   
+    try {
+        const adminAuth = verifyAuth(req, res, {authType: "Admin"});
+        if (!adminAuth.flag)
+            return res.status(401).json({ error: adminAuth.cause});
+
+        const { type, color } = req.body;
+        if(!type)
+            return res.status(400).json({ error: "type field is empty"});
+        if(!color)
+            return res.status(400).json({ error: "color field is empty"});
+
+        const found = await categories.findOne({type : type});
+        if(found)
+            return res.status(400).json({ error: "type already present"});
+
+        const new_categories = new categories({type, color});
+        const data = await new_categories.save();
+
+        return res.status(200).json({data: {type: data.type, color: data.color}, refreshedTokenMessage: res.locals.refreshedTokenMessage});
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
 }
+
+
 
 /**
  * Edit a category's type or color
@@ -144,7 +167,22 @@ export const deleteCategory = async (req, res) => {
     - empty array is returned if there are no categories
  */
 export const getCategories = async (req, res) => {
-   
+    try {
+        const simpleAuth = verifyAuth(req, res, {authType: "Simple"});
+        if (!simpleAuth.flag)
+            return res.status(401).json({ error: simpleAuth.cause});
+
+        const data = await categories.find({});
+
+        let filter = [];
+        if (data)
+            filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }));
+
+        return res.status(200).json({data: filter , refreshedTokenMessage : res.locals.refreshedTokenMessage});
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
 }
 
 /**
@@ -246,7 +284,7 @@ export const getTransactionsByUser = async (req, res) => {
         let date = {};
         let amount = {};
         if (userAuth.flag && adminURL.test(req.url)) {
-
+            
         }
         else if (userURL.test(req.url)) {
             const userAuth = verifyAuth(req, res, { authType: "User", username: req.params.username });

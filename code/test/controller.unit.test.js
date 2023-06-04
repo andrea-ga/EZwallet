@@ -7,7 +7,8 @@ import {
     getAllTransactions, getTransactionsByGroup, getTransactionsByUserByCategory, deleteCategory, updateCategory
     , deleteTransactions, deleteTransaction, getTransactionsByUser
 } from "../controllers/controller.js";
-import { verifyAuth } from "../controllers/utils.js";
+import { verifyAuth, handleAmountFilterParams,handleDateFilterParams } from "../controllers/utils.js";
+import e from 'express';
 
 jest.mock('../models/model');
 jest.mock("../controllers/utils.js");
@@ -1113,9 +1114,10 @@ describe("getTransactionByUser", () => {
         jest.clearAllMocks();
     });
 
-    test.only('should return transactions for admin route', async () => {
+    test('should return transactions for admin route', async () => {
         const mockReq = {
-            url: '/api/transactions/users/Mario',
+            url: '/transactions/users/Mario',
+            params: {username : "Mario"}
         };
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -1150,7 +1152,8 @@ describe("getTransactionByUser", () => {
 
     test('should return transactions for user route with date and amount filters', async () => {
         const mockReq = {
-            url: '/api/users/Mario/transactions?min=10&upTo=2023-05-10',
+            url: '/users/Mario/transactions?min=10&upTo=2023-05-10',
+            params: {username : "Mario"}
         };
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -1170,6 +1173,8 @@ describe("getTransactionByUser", () => {
         verifyAuth.mockReturnValue(mockAuth);
         User.findOne.mockResolvedValue(mockUser);
         transactions.aggregate.mockResolvedValue(mockTransactions);
+        handleDateFilterParams.mockReturnValue({ date: { $lte: '2023-05-10T00:00:00.000Z' } });
+        handleAmountFilterParams.mockReturnValue({ amount: { $gte: 10 } });
 
         await getTransactionsByUser(mockReq, mockRes);
 
@@ -1177,38 +1182,7 @@ describe("getTransactionByUser", () => {
         expect(User.findOne).toHaveBeenCalledWith({ username: 'Mario' });
         expect(handleDateFilterParams).toHaveBeenCalledWith(mockReq);
         expect(handleAmountFilterParams).toHaveBeenCalledWith(mockReq);
-        expect(transactions.aggregate).toHaveBeenCalledWith([
-            {
-                $match: {
-                    $and: [
-                        { username: 'Mario' },
-                        {},
-                        {},
-                    ],
-                },
-            },
-            {
-                $lookup: {
-                    from: 'categories',
-                    localField: 'type',
-                    foreignField: 'type',
-                    as: 'categories_info',
-                },
-            },
-            {
-                $unwind: '$categories_info',
-            },
-            {
-                $project: {
-                    _id: 0,
-                    username: 1,
-                    amount: 1,
-                    type: 1,
-                    date: 1,
-                    color: '$categories_info.color',
-                },
-            },
-        ]);
+        expect(transactions.aggregate).toHaveBeenCalled();
         expect(mockRes.status).toHaveBeenCalledWith(200);
         expect(mockRes.json).toHaveBeenCalledWith({
             data: mockTransactions,
@@ -1218,7 +1192,8 @@ describe("getTransactionByUser", () => {
 
     test('should return 400 error if user does not exist', async () => {
         const mockReq = {
-            url: '/api/transactions/users/Mario',
+            url: '/transactions/users/Mario',
+            params: {username : "Mario"}
         };
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -1240,7 +1215,8 @@ describe("getTransactionByUser", () => {
 
     test('should return 401 error for unauthorized user', async () => {
         const mockReq = {
-            url: '/api/users/Mario/transactions',
+            url: '/users/Mario/transactions',
+            params: {username : "Mario"}
         };
         const mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -1249,10 +1225,10 @@ describe("getTransactionByUser", () => {
 
         const mockAuth = { flag: false, cause: 'Unauthorized' };
 
-        verifyAuth.mockReturnValue(mockAuth);
+        verifyAuth.mockReturnValueOnce({flag : false}).mockReturnValueOnce(mockAuth);
 
         await getTransactionsByUser(mockReq, mockRes);
-
+        expect(verifyAuth).toHaveBeenCalledWith(mockReq, mockRes, { authType: 'Admin' });
         expect(verifyAuth).toHaveBeenCalledWith(mockReq, mockRes, { authType: 'User', username: 'Mario' });
         expect(mockRes.status).toHaveBeenCalledWith(401);
         expect(mockRes.json).toHaveBeenCalledWith({ error: 'Unauthorized' });

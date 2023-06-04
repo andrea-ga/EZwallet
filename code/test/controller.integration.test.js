@@ -24,6 +24,10 @@ beforeAll(async () => {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
+await User.deleteMany({});
+await  Group.deleteMany({});
+await transactions.deleteMany({});
+await categories.deleteMany({});
 
 });
 
@@ -43,6 +47,8 @@ describe("createCategory", () => {
         {username: "tester3", email: "test3@test.com", password: "tester3", role: "Admin"}];
 
     beforeAll(async () => {
+        await User.deleteMany({})
+        await categories.deleteMany({})
         for (const c of list_of_users)
         { await User.create( c )}
     })
@@ -109,18 +115,19 @@ describe("updateCategory", () => {
     {username: "tester3", email: "test3@test.com", password: "tester3", role: "Admin"}]
 
     beforeAll(async () => {
+        await User.deleteMany({})
+        await categories.deleteMany({})
+        await transactions.deleteMany({})
         for (const c of list_of_users)
         { await User.create( c )}
         await categories.create({type: "type1", color: "color1"})
         await categories.create({type: "type2", color: "color2"})
         await categories.create({type: "type3", color: "color3"})
         await categories.create({type: "type4", color: "color4"})
-        await categories.create({type: "type5", color: "color5"})
         await transactions.create({username: "tester", amount: 10, type: "type1", date : new Date("2021-01-01")})
         await transactions.create({username: "tester", amount: 11, type: "type2", date : new Date("2021-01-02")})
         await transactions.create({username: "tester", amount: 12, type: "type3", date : new Date("2021-01-03")})
         await transactions.create({username: "tester", amount: 13, type: "type4", date : new Date("2021-01-04")})
-        await transactions.create({username: "tester", amount: 14, type: "type5", date : new Date("2021-01-05")})
         await transactions.create({username: "tester2", amount: 15, type: "type1", date : new Date("2021-01-06")})
         await transactions.create({username: "tester2", amount: 16, type: "type2", date : new Date("2021-01-07")})
         await transactions.create({username: "tester2", amount: 17, type: "type3", date : new Date("2021-01-08")})
@@ -135,7 +142,6 @@ describe("updateCategory", () => {
 
     test("User unauthorized", async () => {
         let type1 = "type1"
-
         let res = await request(app).patch(`/api/categories/${type1}`).send({type: "type1", color: "color1"}).set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
 
         expect(res.status).toBe(401);
@@ -178,6 +184,9 @@ describe("deleteCategory", () => {
     {username: "tester3", email: "test3@test.com", password: "tester3", role: "Admin"}]
 
     beforeAll(async () => {
+        await categories.deleteMany({})
+        await transactions.deleteMany({})
+        await User.deleteMany({})
         for (const c of list_of_users)
         { await User.create( c )}
         await categories.create({type: "type1", color: "color1"})
@@ -649,6 +658,9 @@ describe("getTransactionsByUserByCategory", () => {
         {username: "tester3", email: "test3@test.com", password: "tester3", role: "Admin"}];
 
     beforeAll(async () => {
+        await User.deleteMany({})
+        await categories.deleteMany({})
+        await transactions.deleteMany({});
         for (const c of list_of_users)
         {   await User.create( c )}
 
@@ -1261,7 +1273,6 @@ describe("deleteTransactions", () => {
         let ff2 = await transactions.findOne({_id: myid2})
         expect(ff2).toBe(null)
 
-        console.log(res.body)
 
     })
 })

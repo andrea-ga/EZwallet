@@ -22,6 +22,10 @@ beforeAll(async () => {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
+  await User.deleteMany({});
+await  Group.deleteMany({});
+await transactions.deleteMany({});
+await categories.deleteMany({});
 });
 
 /**
@@ -520,7 +524,6 @@ describe("deleteUser", () => {
 
 test("Admin delete another user that the only member of a group", async () => {
     let res = await request(app).delete(`/api/users`).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h')).send({email : list_of_users[7].email});
-   console.log(res.body.error)
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ data: { deletedTransactions: 0, removedFromGroup: true } })
     let present = await Group.findOne({name : "test_group4"})

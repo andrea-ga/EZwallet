@@ -21,7 +21,10 @@ beforeAll(async () => {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
-
+  await User.deleteMany({});
+  await  Group.deleteMany({});
+  await transactions.deleteMany({});
+  await categories.deleteMany({});
 });
 
 afterAll(async () => {
@@ -136,7 +139,6 @@ afterAll(async () => {
     let res = await request(app).post("/api/login").send({
       email: "test@test.com",
       password : "tester"});
-      console.log(res.body.error)
     expect(res.statusCode).toBe(200);
     
     let av= jwt.verify(res.body.data.accessToken, process.env.ACCESS_KEY)
@@ -202,7 +204,6 @@ describe('logout', () => {
     let res = await request(app).post("/api/login").send({
       email: "test@test.com",
       password : "tester"});
-      console.log(res.body.error)
     expect(res.statusCode).toBe(200);
     
     let av= jwt.verify(res.body.data.accessToken, process.env.ACCESS_KEY)
