@@ -41,38 +41,6 @@ export const createCategory = async (req, res) => {
     - error 401 is returned if new parameters have invalid values
  */
     export const updateCategory = async (req, res) => {
-        try {
-            const adminAuth = verifyAuth(req, res, {authType: "Admin"});
-            if (!adminAuth.flag)
-                return res.status(401).json({ error: adminAuth.cause});
-      
-          const previousType = req.params.type;
-          const { type, color } = req.body;
-
-          const category = await categories.findOne( {type: previousType});
-          if (!category){
-            return res.status(401).json({ message: "Category not found" });
-          }
-          
-        
-         const count = await transactions.updateMany(
-            { type: previousType},
-            { type: type, color: color},
-            { upsert: true, }
-         );
-         
-         
-         await categories.updateOne(
-            {type: previousType}, 
-            {type: type, color: color},
-            {upsert: true}
-            );
-            
-         res.status(200).json({data: { message: "Category updated successfully", count: count.modifiedCount}});
-
-        } catch (error) {
-          res.status(400).json({ error: error.message });
-        }
       };
 /**
  * Delete a category
@@ -82,47 +50,6 @@ export const createCategory = async (req, res) => {
     - error 401 is returned if the specified category does not exist
  */
     export const deleteCategory = async (req, res) => {
-        try {
-
-          if (!verifyAuth(req, res, { authType: "Admin" })) 
-            return ;
-      
-          const cat = req.body.types;
-
-          // Delete the category from the server/database using the categoryId
-          
-          // find all the categories that have the type given in the req.body.type parameter and delete the category
-          // ---> if only one category per type or per color no foor loop needed. We have to check if color or type attribute are unique as tuple or as individual attribute
-          for (const c of cat){
-            console.log(c);
-
-
-            // updates all the transaction that have the transaction type as c
-            transactions.updateMany(
-                { type: c},
-                { type: "investment"},
-                {
-                  upsert: true,
-                  
-                }
-             )
-            const cat = await categories.findOne({type: c});
-            if (!cat){
-                return res.status(401).json({message: "Category cat does not exist "});
-            }
-            
-            const deleted = await categories.findOneAndDelete({type: c})
-                                                .catch(()=> {
-                                                        res.status(401).json({message: "Category does not exist"});
-                                                }
-                                                );
-          }
-
-          res.status(200).json( {data: { message: "Category updated successfully" }});
-          
-        } catch (error) {
-          res.status(400).json({ error: error.message });
-        }
       };
 
 
@@ -241,46 +168,7 @@ export const getAllTransactions = async (req, res) => {
  */
 
 export const getTransactionByUser = async (req, res) => {
-        try {
-            const userAuth=verifyAuth(req, res, { authType: "Admin" })
-            if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
-
-            const user = await User.findOne({ "username": req.params.username })
-            if (!user){
-                return res.status(401).json({error: "User does not exist"});
-            }
-
-        
-        const result = await transactions.aggregate([
-            {
-                $match: { 
-                    username: req.params.username
-                }
-            },
-            {
-                $lookup: {
-                    from: "categories",
-                    localField: "type",
-                    foreignField: "type",
-                    as: "categories_info"
-                }
-            },
-            { $unwind: "$categories_info" }
-        ]);
-
-        const data = result.map(r => Object.assign({}, { _id: r._id, username: r.username,
-                                                          type: r.type, amount: r.amount, date: r.date, 
-                                                        color: r.categories_info.color }
-                                                        )
-                                );
-        return res.status(200).json({data: data, refreshedTokenMessage: res.locals.refreshedTokenMessage});
-            // Assuming you have a "transactions" collection or model to query from
-          //  let data = await transactions.find({ userId: req.params.userId }); // Assuming userId is the field to match
-          //  return res.json(data);
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    };
+};
 
 /**
  * Return all transactions made by a specific user filtered by a specific category
@@ -476,16 +364,6 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
     - error 401 is returned if the user or the transaction does not exist
  */
 export const deleteTransaction = async (req, res) => {
-    try {
-
-       const userAuth=verifyAuth(req, res, { authType: "User", username : req.params.username })
-       if (!userAuth.flag) return res.status(400).json({ error: userAuth.cause });
-
-        let data = await transactions.deleteOne({ _id: req.body._id });
-        return res.json({data : "success" , message : res.locals.message });
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
 }
 
 /**
@@ -497,17 +375,4 @@ export const deleteTransaction = async (req, res) => {
  */
 
 export const deleteTransactions = async (req, res) => {
-        try {
-    
-            const adminAuth = verifyAuth(req, res, {authType: "Admin"})
-            if (!adminAuth.flag) return res.status(401).json({ error: adminAuth.cause});  //check the NUMBER
-  
-            const ids = req.body.ids
-            for (const id of ids){
-                let data = await transactions.deleteOne({ _id: id });
-            }
-            return res.json({data : "All the transaction deleted" , message : res.locals.message});
-        } catch (error) {
-            res.status(400).json({ error: error.message })
-        }
 }
