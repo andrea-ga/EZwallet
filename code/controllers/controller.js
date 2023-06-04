@@ -1,35 +1,15 @@
+import { type } from "os";
 import { categories, transactions } from "../models/model.js";
 import { Group, User } from "../models/User.js";
 import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./utils.js";
-
+import jwt from 'jsonwebtoken'
 /**
  * Create a new category
   - Request Body Content: An object having attributes `type` and `color`
   - Response `data` Content: An object having attributes `type` and `color`
  */
 export const createCategory = async (req, res) => {
-    try {
-        const adminAuth = verifyAuth(req, res, {authType: "Admin"});
-        if (!adminAuth.flag)
-            return res.status(401).json({ error: adminAuth.cause});
-
-        const { type, color } = req.body;
-        if(!type)
-            return res.status(400).json({ error: "type field is empty"});
-        if(!color)
-            return res.status(400).json({ error: "color field is empty"});
-
-        const found = await categories.findOne({type : type});
-        if(found)
-            return res.status(400).json({ error: "type already present"});
-
-        const new_categories = new categories({type, color});
-        const data = await new_categories.save();
-
-        return res.status(200).json({data: {type: data.type, color: data.color}, refreshedTokenMessage: res.locals.refreshedTokenMessage});
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
+   
 }
 
 /**
@@ -40,8 +20,44 @@ export const createCategory = async (req, res) => {
     - error 401 returned if the specified category does not exist
     - error 401 is returned if new parameters have invalid values
  */
-    export const updateCategory = async (req, res) => {
-      };
+export const updateCategory = async (req, res) => {
+    try {
+        const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+        if (!adminAuth.flag)
+            return res.status(401).json({ error: adminAuth.cause });
+
+        const previousType = req.params.type;
+        const { type, color } = req.body;
+
+        const category = await categories.findOne({ type: previousType });
+        if (!category) {
+            return res.status(400).json({ error: "Category not found" });
+        }
+        if (!type || !color || type === "" || color === "") {
+            return res.status(400).json({ error: "Invalid request" })
+        }
+        const alreadyPresent = await categories.findOne({ type: type });
+        if (alreadyPresent) {
+            return res.status(400).json({ error: "Category already present" });
+        }
+
+        const count = await transactions.updateMany(
+            { type: previousType },
+            { type: type },
+        );
+
+
+        await categories.updateOne(
+            { type: previousType },
+            { type: type, color: color },
+        );
+
+        res.status(200).json({ data: { message: "Category updated successfully", count: count.modifiedCount }, refreshedTokenMessage: res.locals.refreshedTokenMessage });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 /**
  * Delete a category
   - Request Body Content: An array of strings that lists the `types` of the categories to be deleted
@@ -49,8 +65,75 @@ export const createCategory = async (req, res) => {
   - Optional behavior:
     - error 401 is returned if the specified category does not exist
  */
-    export const deleteCategory = async (req, res) => {
-      };
+export const deleteCategory = async (req, res) => {
+    try {
+        const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+        if (adminAuth.flag === false)
+            return res.status(401).json({ error: adminAuth.cause });
+
+        const { types } = req.body
+        let count = 0;
+        // Delete the category from the server/database using the categoryId
+        if (!types || types.length === 0 || types.includes("")) {
+            return res.status(400).json({ error: "Invalid request" });
+        }
+        // find all the categories that have the type given in the req.body.type parameter and delete the category
+        // ---> if only one category per type or per color no foor loop needed. We have to check if color or type attribute are unique as tuple or as individual attribute
+        let num_cat = await categories.countDocuments();
+        if (num_cat <= 1) {
+            return res.status(400).json({ error: "Cannot delete the only category present" });
+        }
+
+        if (types.length > num_cat) {
+            return res.status(400).json({ error: "Cannot delete more categories than the ones present" });
+        }
+        for (let type of types) {
+            const cat = await categories.findOne({ type: type });
+            if (!cat) {
+                return res.status(400).json({ message: "Category does not exist" });
+            }
+        }
+        //find all the transactions sorted from the oldest to the newest
+        let foundCategories = await categories.find({}).sort({ createdAt: 1 }).select({ type: 1, _id: 0 });
+        if (types.length < num_cat) {
+            for (let type of types) {
+
+                let c = await categories.findOneAndDelete({ type: type });
+                count += 1;
+            }
+            let foundCategories = await categories.find({}).sort({ createdAt: 1 }).limit(1).select({ type: 1, _id: 0 });
+            for (let type of types) {
+
+                await transactions.updateMany({
+                    type: type
+                }, {
+                    type: foundCategories[0].type
+                })
+            }
+        }
+        if (types.length === num_cat) {
+            let foundCategories = await categories.find({}).sort({ createdAt: 1 }).limit(1).select({ type: 1, _id: 0 });
+
+            for (let type of types) {
+
+                if (type != foundCategories[0].type) {
+                    await categories.findOneAndDelete({ type: type });
+                    count += 1
+                }
+                await transactions.updateMany({
+                    type: type
+                }, {
+                    type: foundCategories[0].type
+                })
+            }
+        }
+
+        res.status(200).json({ data: { message: "Categories deleted", count: count }, refreshedTokenMessage: res.locals.refreshedTokenMessage });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
 
 /**
@@ -61,21 +144,7 @@ export const createCategory = async (req, res) => {
     - empty array is returned if there are no categories
  */
 export const getCategories = async (req, res) => {
-    try {
-        const simpleAuth = verifyAuth(req, res, {authType: "Simple"});
-        if (!simpleAuth.flag)
-            return res.status(401).json({ error: simpleAuth.cause});
-
-        const data = await categories.find({});
-
-        let filter = [];
-        if (data)
-            filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }));
-
-        return res.status(200).json({data: filter , refreshedTokenMessage : res.locals.refreshedTokenMessage});
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
+   
 }
 
 /**
@@ -167,7 +236,81 @@ export const getAllTransactions = async (req, res) => {
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
 
-export const getTransactionByUser = async (req, res) => {
+export const getTransactionsByUser = async (req, res) => {
+    try {
+        //regexp fot the url /api/transactions/users/Mario
+        let adminURL = /^\/transactions\/users\/([^/]+)$/;
+        //regexp for the url of the normal user /api/users/:username/transactions?amount with possible other params
+        let userURL = /^\/users\/([^/]+)\/transactions(?:\?([^/]+))?$/;
+        const userAuth = verifyAuth(req, res, { authType: "Admin" })
+        let date = {};
+        let amount = {};
+        if (userAuth.flag && adminURL.test(req.url)) {
+
+        }
+        else if (userURL.test(req.url)) {
+            const userAuth = verifyAuth(req, res, { authType: "User", username: req.params.username });
+            if (!userAuth.flag) {
+                return res.status(401).json({ error: userAuth.cause });
+            }
+            date = handleDateFilterParams(req)
+            amount = handleAmountFilterParams(req)
+             if(Object.keys(date.date).length==0)
+            date = {}
+        if(Object.keys(amount.amount).length==0)
+            amount = {}
+        }
+        else {
+            return res.status(401).json({ error: "Unauthorized" });
+            
+        }
+
+        const user = await User.findOne({ "username": req.params.username })
+        if (!user) {
+            return res.status(400).json({ error: "User does not exist" });
+        }
+        
+       
+
+        const result = await transactions.aggregate([
+            {
+                $match: {
+                    $and: [
+                    {username: user.username},
+                     date,
+                       amount
+                ]
+                }
+            },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "type",
+                    foreignField: "type",
+                    as: "categories_info"
+                }
+            },
+            { $unwind: "$categories_info" },
+            {
+                $project: {
+                _id: 0,
+
+                username: 1,
+                amount: 1,
+                type: 1,
+                date: 1,
+                color: "$categories_info.color"
+                }
+            }
+        ]);
+        //const result = await transactions.find({ username: req.params.username })              
+return res.status(200).json({ data: result, refreshedTokenMessage: res.locals.refreshedTokenMessage });
+        // Assuming you have a "transactions" collection or model to query from
+        //  let data = await transactions.find({ userId: req.params.userId }); // Assuming userId is the field to match
+        //  return res.json(data);
+    } catch (error) {
+    res.status(500).json({ error: error.message });
+}
 };
 
 /**
@@ -364,15 +507,51 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
     - error 401 is returned if the user or the transaction does not exist
  */
 export const deleteTransaction = async (req, res) => {
+    try {
+
+        const userAuth = verifyAuth(req, res, { authType: "User", username: req.params.username })
+        if (!userAuth.flag) return res.status(401).json({ error: userAuth.cause });
+        let { _id } = req.body;
+
+        if (!_id || _id === "")
+            return res.status(400).json({ error: "Missing _id" });
+        let user = await User.findOne({ username: req.params.username });
+        if (!user)
+            return res.status(400).json({ error: "User not found" });
+
+        let transactionfound = await transactions.findOne({ _id: _id });
+        if (!transactionfound || transactionfound.username !== user.username)
+            return res.status(400).json({ error: "Transaction not deleted" });
+
+        let data = await transactions.deleteOne({ _id: req.body._id });
+        return res.status(200).json({ data: { message: "Transaction deleted" }, refreshedTokenMessage: res.locals.refreshedTokenMessage });
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
 }
 
-/**
- * Delete multiple transactions identified by their ids
-  - Request Body Content: An array of strings that lists the `_ids` of the transactions to be deleted
-  - Response `data` Content: A message confirming successful deletion
-  - Optional behavior:
-    - error 401 is returned if at least one of the `_ids` does not have a corresponding transaction. Transactions that have an id are not deleted in this case
- */
-
 export const deleteTransactions = async (req, res) => {
+    try {
+
+        const adminAuth = verifyAuth(req, res, { authType: "Admin" })
+        if (!adminAuth.flag)
+            return res.status(401).json({ error: adminAuth.cause });
+
+        const { _ids } = req.body
+        if (!_ids || _ids.length === 0)
+            return res.status(400).json({ error: "Missing ids" });
+
+        for (let id of _ids) {
+            if (id === "")
+                return res.status(400).json({ error: "Invalid id" });
+            let valid = await transactions.findOne({ _id: id });
+            if (!valid)
+                return res.status(400).json({ error: "Invalid id" });
+        }
+        await transactions.deleteMany({ _id: { $in: _ids } });
+
+        return res.json({ data: { message: "All transactions deleted" }, refreshedTokenMessage: res.locals.refreshedTokenMessage });
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    }
 }

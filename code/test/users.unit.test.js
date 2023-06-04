@@ -1040,7 +1040,7 @@ test("User successfully deleted and in a group", async () => {
       refreshToken : "9924hfoewrhfuhorfoi34uf394uo4ifhrrhlf843fho"} );  
 
     transactions.deleteMany.mockResolvedValueOnce( {deletedCount  : 3} ); 
-    Group.findOne.mockResolvedValueOnce({name : "gf", memebers : [ {email : "us@01.com" , id : "jfri"}, {email : "us@02.com" , id : "jfri"}]});
+    Group.findOne.mockResolvedValueOnce({name : "gf", members : [ {email : "us@01.com" , id : "jfri"}, {email : "us@02.com" , id : "jfri"}]});
     
     Group.updateOne.mockResolvedValueOnce(true); 
     User.deleteOne.mockReturnValueOnce(true);
