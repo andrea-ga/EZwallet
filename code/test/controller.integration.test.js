@@ -468,9 +468,102 @@ describe("getAllTransactions", () => {
 })
 
 describe("getTransactionsByUser", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
-    });
+    let list_of_users = [{username: "tester", email: "test@test.com", password: "tester", role: "Regular"}, 
+    {username: "tester2", email: "test2@test.com", password: "tester2", role: "Regular"}, 
+    {username: "tester3", email: "test3@test.com", password: "tester3", role: "Admin"}]
+    
+    beforeAll(async () => {
+        for (const c of list_of_users)
+        { await User.create( c )}
+        await categories.create({type: "type1", color: "color1"})
+        await categories.create({type: "type2", color: "color2"})
+        await categories.create({type: "type3", color: "color3"})
+        await categories.create({type: "type4", color: "color4"})
+        await categories.create({type: "type5", color: "color5"})
+        await transactions.create({username: "tester", amount: 10, type: "type1", date : new Date("2021-01-01")})
+        await transactions.create({username: "tester", amount: 11, type: "type2", date : new Date("2021-01-02")})
+        await transactions.create({username: "tester", amount: 12, type: "type3", date : new Date("2021-01-03")})
+        await transactions.create({username: "tester", amount: 13, type: "type4", date : new Date("2021-01-04")})
+        await transactions.create({username: "tester", amount: 14, type: "type5", date : new Date("2021-01-05")})
+        await transactions.create({username: "tester2", amount: 15, type: "type1", date : new Date("2021-01-06")})
+        await transactions.create({username: "tester2", amount: 16, type: "type2", date : new Date("2021-01-07")})
+        await transactions.create({username: "tester2", amount: 17, type: "type3", date : new Date("2021-01-08")})
+        await transactions.create({username: "tester3",amount: 18, type: "type4", date : new Date("2021-01-09")}) 
+    })
+    afterAll(async () => {
+        await transactions.deleteMany({})
+        await User.deleteMany({})
+    })
+
+    test('User search for another user transactions', async () => {
+        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[1], "1h") +
+                "; refreshToken=" + generateToken(list_of_users[1], "1h"));
+
+        expect(res.status).toBe(401);
+        expect(res.body.error).toStrictEqual("Unauthorized");
+    })
+
+    test('User search for his transactions', async () => {
+        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
+                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        expect(res.status).toBe(200);
+        expect(res.body.data.length).toBe(5);
+
+    })
+     test('User search for his transactions with date filter', async () => {
+     
+        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?date=2021-01-01`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.length).toBe(1);
+
+    })
+
+    test('User search for his transactions with amount filter', async () => {
+         
+            const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?min=10&max=10`)
+                .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+    
+            expect(res.status).toBe(200);
+            expect(res.body.data.length).toBe(1);
+    })
+
+    test('User search for his transactions with amount and date filter', async () => {  
+
+        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?min=10&max=10&date=2021-01-01`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.length).toBe(1);
+    })
+
+    test('Admin search for another user transactions', async () => {
+        const res = await request(app).get(`/api/transactions/users/${list_of_users[0].username}`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[2], "1h") + "; refreshToken=" + generateToken(list_of_users[2], "1h"));
+        console.log(res.body)
+            expect(res.status).toBe(200);
+        expect(res.body.data.length).toBe(5)
+
+
+    })
+
+    test('No cookie', async () => {
+        const res = await request(app).get(`/api/transactions/users/${list_of_users[0].username}`)
+        expect(res.status).toBe(401);
+        expect(res.body.error).toStrictEqual("Unauthorized");
+    })
+
+    test('User search for his transactions with amount and date filter second test', async () => {
+        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?min=10&max=13&from=2020-12-31&to=2021-01-04`)
+            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") + "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        expect(res.status).toBe(200);
+        expect(res.body.data.length).toBe(4)
+
+})
+
 })
 
 describe("getTransactionsByUserByCategory", () => { 

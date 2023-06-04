@@ -1,3 +1,4 @@
+import { copyFileSync } from 'fs';
 import jwt from 'jsonwebtoken'
 /**
  * Handle possible date filtering options in the query parameters for getTransactionsByUser when called by a Regular user.
@@ -72,9 +73,12 @@ export const verifyAuth = (req, res, info) => {
         return { flag: false, cause: "Unauthorized" };
     }
     try {
+        console.log(cookie.accessToken)
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
+        console.log("here2")
+        console.log(decodedAccessToken)
         const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
-
+        console.log(decodedRefreshToken)
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
             return { flag: false, cause: "Token is missing information" }
         }

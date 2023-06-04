@@ -15,7 +15,7 @@ describe("handleDateFilterParams", () => {
         expect(handleDateFilterParams(mockReq)).toStrictEqual({date: {$gte: d}});
     });
 
-    test.only('upTo filter', () => {
+    test('upTo filter', () => {
         const mockReq = {url : "users/test/transactions?upTo=2023-05-10",
             query: {upTo: "2023-05-10"}};
 

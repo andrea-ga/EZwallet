@@ -5,11 +5,13 @@ import { User, Group } from "../models/User.js";
 import {
     createCategory, getCategories, createTransaction,
     getAllTransactions, getTransactionsByGroup, getTransactionsByUserByCategory, deleteCategory , updateCategory
+    ,deleteTransactions,deleteTransaction
 } from "../controllers/controller.js";
 import { verifyAuth } from "../controllers/utils.js";
 
 jest.mock('../models/model');
 jest.mock("../controllers/utils.js");
+jest.mock("../models/User.js");
 
 beforeEach(() => {
     categories.find.mockClear();
@@ -148,7 +150,7 @@ describe("createCategory", () => {
     });
 })
 
-describe.only("updateCategory", () => {
+describe("updateCategory", () => {
     afterEach(() => {
         jest.resetAllMocks();
     });
@@ -1964,11 +1966,327 @@ describe("getTransactionsByGroupByCategory", () => {
 })
 
 describe("deleteTransaction", () => {
-   
+    afterEach(() => {
+        jest.resetAllMocks();
+      });
+    
+      test("User request to delete an existing transaction", async () => {
+        const mockReq = {
+          params: {
+            username: "Mario",
+          },
+          body: {
+            _id: "6hjkohgfc8nvu786",
+          },
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: true }); // user
+        User.findOne.mockResolvedValueOnce({ username: "Mario" }); // user found
+        transactions.findOne.mockResolvedValueOnce({
+          _id: "6hjkohgfc8nvu786",
+          username: "Mario",
+        }); // transaction found
+        transactions.deleteOne.mockResolvedValueOnce(); // delete transaction
+    
+        await deleteTransaction(mockReq, mockRes);
+    
+        
+        expect(User.findOne).toHaveBeenCalledWith({ username: "Mario" });
+        expect(transactions.findOne).toHaveBeenCalledWith({
+          _id: "6hjkohgfc8nvu786",
+        });
+        expect(transactions.deleteOne).toHaveBeenCalledWith({
+          _id: "6hjkohgfc8nvu786",
+        });
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          data: { message: "Transaction deleted" },
+          refreshedTokenMessage: undefined,
+        });
+
+      });
+    
+      test("User request to delete a non-existing transaction", async () => {
+        const mockReq = {
+          params: {
+            username: "Mario",
+          },
+          body: {
+            _id: "6hjkohgfc8nvu786",
+          },
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: true }); // user
+        User.findOne.mockResolvedValueOnce({ username: "Mario" }); // user found
+        transactions.findOne.mockResolvedValueOnce(undefined); // transaction not found
+    
+        await deleteTransaction(mockReq, mockRes);
+    
+        expect(verifyAuth).toHaveBeenCalledWith(mockReq, mockRes, {
+          authType: "User",
+          username: "Mario",
+        });
+        expect(User.findOne).toHaveBeenCalledWith({ username: "Mario" });
+        expect(transactions.findOne).toHaveBeenCalledWith({
+          _id: "6hjkohgfc8nvu786",
+        });
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          error: "Transaction not deleted",
+        });
+      });
+    
+      test("User request to delete a transaction of a different user", async () => {
+        const mockReq = {
+          params: {
+            username: "Mario",
+          },
+          body: {
+            _id: "6hjkohgfc8nvu786",
+          },
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: true }); // user
+        User.findOne.mockResolvedValueOnce({ username: "Luigi" }); // different user found
+    
+        await deleteTransaction(mockReq, mockRes);
+    
+        expect(verifyAuth).toHaveBeenCalledWith(mockReq, mockRes, {
+          authType: "User",
+          username: "Mario",
+        });
+        expect(User.findOne).toHaveBeenCalledWith({ username: "Mario" });
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          error: "Transaction not deleted",
+        });
+      });
+    
+      test("User request with missing _id", async () => {
+        const mockReq = {
+          params: {
+            username: "Mario",
+          },
+          body: {},
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: true }); // user
+    
+        await deleteTransaction(mockReq, mockRes);
+    
+        expect(verifyAuth).toHaveBeenCalledWith(mockReq, mockRes, {
+          authType: "User",
+          username: "Mario",
+        });
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          error: "Missing _id",
+        });
+      });
+    
+      test("Authenticated user request to delete a transaction of another user", async () => {
+        const mockReq = {
+          params: {
+            username: "Mario",
+          },
+          body: {
+            _id: "6hjkohgfc8nvu786",
+          },
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: false, cause: "Unauthorized" }); // unauthenticated
+    
+        await deleteTransaction(mockReq, mockRes);
+    
+        expect(verifyAuth).toHaveBeenCalledWith(mockReq, mockRes, {
+          authType: "User",
+          username: "Mario",
+        });
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          error: "Unauthorized"
+        });
+      });
 })
 
 describe("deleteTransactions", () => {
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
-    });
+    afterEach(() => {
+        jest.resetAllMocks();
+      });
+    
+      test("Admin request to delete existing transactions", async () => {
+        const mockReq = {
+          body: {
+            _ids: ["transaction1", "transaction2"],
+          },
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: true }); // admin
+        transactions.findOne.mockResolvedValueOnce({ _id: "transaction1" }); // first transaction
+        transactions.findOne.mockResolvedValueOnce({ _id: "transaction2" }); // second transaction
+        transactions.deleteMany.mockResolvedValueOnce(); // delete transactions
+    
+        await deleteTransactions(mockReq, mockRes);
+    
+        expect(verifyAuth).toHaveBeenCalledWith(mockReq, mockRes, { authType: "Admin" });
+        expect(transactions.findOne).toHaveBeenCalledWith({ _id: "transaction1" });
+        expect(transactions.findOne).toHaveBeenCalledWith({ _id: "transaction2" });
+        expect(transactions.deleteMany).toHaveBeenCalledWith({ _id: { $in: ["transaction1", "transaction2"] } });
+        expect(mockRes.json).toHaveBeenCalledWith({ data: { message: "All transactions deleted" }, refreshedTokenMessage: undefined });
+      });
+    
+      test("Admin request to delete non-existing transactions", async () => {
+        const mockReq = {
+          body: {
+            _ids: ["transaction1", "transaction2"],
+          },
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: true }); // admin
+        transactions.findOne.mockResolvedValueOnce(undefined); // first transaction does not exist
+    
+        await deleteTransactions(mockReq, mockRes);
+    
+        expect(verifyAuth).toHaveBeenCalledWith(mockReq, mockRes, { authType: "Admin" });
+        expect(transactions.findOne).toHaveBeenCalledWith({ _id: "transaction1" });
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: "Invalid id" });
+      });
+    
+      test("Non-admin request to delete transactions", async () => {
+        const mockReq = {
+          body: {
+            _ids: ["transaction1", "transaction2"],
+          },
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: false, cause: "Unauthorized" }); // non-admin
+    
+        await deleteTransactions(mockReq, mockRes);
+    
+        expect(verifyAuth).toHaveBeenCalledWith(mockReq, mockRes, { authType: "Admin" });
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+      });
+    
+      test("Invalid request with missing _ids", async () => {
+        const mockReq = {
+          body: {},
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: true }); // admin
+    
+        await deleteTransactions(mockReq, mockRes);
+    
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: "Missing ids" });
+      });
+    
+      test("Invalid request with empty _id", async () => {
+        const mockReq = {
+          body: {
+            _ids: ["transaction1", ""],
+          },
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: true }); // admin
+    
+        await deleteTransactions(mockReq, mockRes);
+    
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: "Invalid id" });
+      });
+    
+      test("Internal server error", async () => {
+        const mockReq = {
+          body: {
+            _ids: ["transaction1"],
+          },
+        };
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: undefined,
+          },
+        };
+    
+        verifyAuth.mockReturnValueOnce({ flag: true }); // admin
+        transactions.findOne.mockRejectedValueOnce(new Error("Database error"));
+    
+        await deleteTransactions(mockReq, mockRes);
+    
+        expect(mockRes.status).toHaveBeenCalledWith(500);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: "Database error" });
+      });
 })

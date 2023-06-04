@@ -14,7 +14,7 @@ describe('register', () => {
   beforeEach(() => {
     jest.resetAllMocks();
   });
-test.only("correct registration", async () => {
+test("correct registration", async () => {
     const mockReq = {
       body : {username: "Mario", email: "mario.red@email.com", password: "securePass"}
     }
