@@ -73,12 +73,8 @@ export const verifyAuth = (req, res, info) => {
         return { flag: false, cause: "Unauthorized" };
     }
     try {
-        console.log(cookie.accessToken)
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
-        console.log("here2")
-        console.log(decodedAccessToken)
         const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
-        console.log(decodedRefreshToken)
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
             return { flag: false, cause: "Token is missing information" }
         }
@@ -143,6 +139,10 @@ export const verifyAuth = (req, res, info) => {
                 res.cookie('accessToken', newAccessToken, { httpOnly: true, path: '/api', maxAge: 60 * 60 * 1000, sameSite: 'none', secure: true })
                 res.locals.refreshedTokenMessage= 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
                 
+                  if (!refreshToken.username || !refreshToken.email || !refreshToken.role) {
+                        return { flag: false, cause: "Token is missing information" }
+                }
+
                 if (info.authType == "User")     //case of access token expired
                 {   
                         const username = info.username;
@@ -187,6 +187,7 @@ export const verifyAuth = (req, res, info) => {
                     return { flag: false, cause: err.name }
                 }
             }
+            
         } else {
             return { flag: false, cause: err.name };
         }

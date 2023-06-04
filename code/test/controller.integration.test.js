@@ -543,7 +543,6 @@ describe("getTransactionsByUser", () => {
     test('Admin search for another user transactions', async () => {
         const res = await request(app).get(`/api/transactions/users/${list_of_users[0].username}`)
             .set("Cookie", "accessToken=" + generateToken(list_of_users[2], "1h") + "; refreshToken=" + generateToken(list_of_users[2], "1h"));
-        console.log(res.body)
             expect(res.status).toBe(200);
         expect(res.body.data.length).toBe(5)
 
@@ -731,5 +730,29 @@ describe("deleteTransactions", () => {
         expect(ff).toBe(null)
         let ff2 = await transactions.findOne({_id: myid2})
         expect(ff2).toBe(null)
+
+
+        await transactions.create({_id :"6478f67648e93a914f316ca5", username: "tester2", amount: 15, type: "type1", date : new Date("2021-01-06")})
+        await transactions.create({_id :"6478f67648e93a914f316ca6",username: "tester2", amount: 16, type: "type2", date : new Date("2021-01-07")})
+    
+    })
+
+    test("Transaction correctly deleted with Access token expired", async () => {
+
+        let myid = "6478f67648e93a914f316ca5" 
+        let myid2 = "6478f67648e93a914f316ca6" 
+
+        const res = await request(app).delete(`/api/transactions`).set( "Cookie", "accessToken=" + generateToken(list_of_users[2], "1ms") + "; refreshToken=" + generateToken(list_of_users[2], "1h"))
+        .send({_ids : [myid, myid2]});
+        expect(res.status).toBe(200);
+        expect(res.body.data.message).toStrictEqual("All transactions deleted");
+        expect(res.body.refreshedTokenMessage).not.toBe(undefined)
+        let ff = await transactions.findOne({_id: myid})
+        expect(ff).toBe(null)
+        let ff2 = await transactions.findOne({_id: myid2})
+        expect(ff2).toBe(null)
+
+        console.log(res.body)
+
     })
 })
