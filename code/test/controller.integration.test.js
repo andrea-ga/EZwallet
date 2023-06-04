@@ -189,6 +189,7 @@ describe("createTransaction", () => {
     afterAll(async () => {
         await User.deleteMany({})
         await categories.deleteMany({})
+        await transactions.deleteMany({})
     })
 
     test('should return the new transaction', async () => {
