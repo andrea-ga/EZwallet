@@ -7,10 +7,15 @@ import jwt from "jsonwebtoken";
 import {verifyAuth} from "../controllers/utils.js";
 import {
     createCategory,
+    updateCategory,
+    deleteCategory,
     createTransaction,
     getAllTransactions,
+    getTransactionsByUser,
     getCategories, getTransactionsByGroup, getTransactionsByGroupByCategory,
-    getTransactionsByUserByCategory
+    getTransactionsByUserByCategory,
+    deleteTransaction,
+    deleteTransactions
 } from "../controllers/controller.js";
 import {User, Group} from "../models/User.js";
 
