@@ -4,7 +4,8 @@ import { categories, transactions } from '../models/model';
 import { User, Group } from "../models/User.js";
 import {
     createCategory, getCategories, createTransaction,
-    getAllTransactions, getTransactionsByGroup, getTransactionsByUserByCategory, deleteCategory, updateCategory
+    getAllTransactions, getTransactionsByGroup, getTransactionsByGroupByCategory, getTransactionsByUserByCategory,
+    deleteCategory, updateCategory
     , deleteTransactions, deleteTransaction, getTransactionsByUser
 } from "../controllers/controller.js";
 import { verifyAuth, handleAmountFilterParams,handleDateFilterParams } from "../controllers/utils.js";
@@ -1108,7 +1109,7 @@ describe("getAllTransactions", () => {
     });
 })
 
-describe("getTransactionByUser", () => {
+describe("getTransactionsByUser", () => {
 
     afterEach(() => {
         jest.clearAllMocks();
