@@ -28,6 +28,7 @@ describe("createCategory", () => {
     afterEach(() => {
         jest.resetAllMocks();
     });
+
     test('should return the new category', async () => {
         const mockReq = { body: { type: "type1", color: "color1" } };
         const mockRes = {
@@ -39,9 +40,9 @@ describe("createCategory", () => {
         }
 
         const newCategory = { type: "type1", color: "color1" };
-        jest.spyOn(categories, "findOne").mockResolvedValue(null);
-        jest.spyOn(categories.prototype, "save").mockResolvedValue(newCategory);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
+        jest.spyOn(categories.prototype, "save").mockResolvedValueOnce(newCategory);
 
         await createCategory(mockReq, mockRes);
 
@@ -65,9 +66,10 @@ describe("createCategory", () => {
         }
 
         const newCategory = { type: "type1", color: "color1" };
-        jest.spyOn(categories, "findOne").mockResolvedValue("");
-        jest.spyOn(categories.prototype, "save").mockResolvedValue(newCategory);
-        verifyAuth.mockReturnValue({ flag: false, cause: "Unauthorized" });
+        verifyAuth.mockReturnValueOnce({ flag: false, cause: "Unauthorized" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
+        jest.spyOn(categories.prototype, "save").mockResolvedValueOnce(newCategory);
+
         await createCategory(mockReq, mockRes);
 
         expect(categories.prototype.save).not.toHaveBeenCalled();
@@ -85,11 +87,12 @@ describe("createCategory", () => {
             }
         }
 
-        jest.spyOn(categories, "findOne").mockResolvedValue("");
-        categories.prototype.save.mockImplementation(() => {
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
+        categories.prototype.save.mockImplementationOnce(() => {
             throw new Error("Internal error");
         })
-        verifyAuth.mockReturnValue({ flag: true });
+
         await createCategory(mockReq, mockRes);
 
         expect(categories.prototype.save).toHaveBeenCalled();
@@ -107,8 +110,8 @@ describe("createCategory", () => {
             }
         }
 
-        jest.spyOn(categories, "findOne").mockResolvedValue("");
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
         await createCategory(mockReq, mockRes);
 
         expect(categories.prototype.save).not.toHaveBeenCalled();
@@ -126,8 +129,9 @@ describe("createCategory", () => {
             }
         }
 
-        jest.spyOn(categories, "findOne").mockResolvedValue("");
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
+
         await createCategory(mockReq, mockRes);
 
         expect(categories.prototype.save).not.toHaveBeenCalled();
@@ -145,8 +149,9 @@ describe("createCategory", () => {
             }
         }
 
-        verifyAuth.mockReturnValue({ flag: true });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+
         await createCategory(mockReq, mockRes);
 
         expect(categories.prototype.save).not.toHaveBeenCalled();
@@ -632,6 +637,10 @@ describe("deleteCategory", () => {
 })
 
 describe("getCategories", () => {
+    afterEach(() => {
+        jest.resetAllMocks();
+    });
+
     test('should return empty list if there are no categories', async () => {
         const mockReq = {};
         const mockRes = {
@@ -642,8 +651,8 @@ describe("getCategories", () => {
             }
         }
 
-        jest.spyOn(categories, "find").mockResolvedValue([]);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(categories, "find").mockResolvedValueOnce([]);
 
         await getCategories(mockReq, mockRes);
 
@@ -667,8 +676,8 @@ describe("getCategories", () => {
 
         const retrievedCategories = [{ type: "type1", color: "color1" },
         { type: "type2", color: "color2" }];
-        jest.spyOn(categories, "find").mockResolvedValue(retrievedCategories);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(categories, "find").mockResolvedValueOnce(retrievedCategories);
 
         await getCategories(mockReq, mockRes);
 
@@ -690,7 +699,7 @@ describe("getCategories", () => {
             }
         }
 
-        verifyAuth.mockReturnValue({ flag: false, cause: "Unauthorized" });
+        verifyAuth.mockReturnValueOnce({ flag: false, cause: "Unauthorized" });
 
         await getCategories(mockReq, mockRes);
 
@@ -713,9 +722,8 @@ describe("getCategories", () => {
 
         const retrievedCategories = [[{ type: "type1", color: "color1" },
         { type: "type2", color: "color2" }]]
-        jest.spyOn(categories, "find").mockResolvedValue(retrievedCategories);
-        verifyAuth.mockReturnValue({ flag: true });
-        categories.find.mockImplementation(() => {
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        categories.find.mockImplementationOnce(() => {
             throw new Error("Internal error");
         })
 
@@ -731,6 +739,7 @@ describe("createTransaction", () => {
     afterEach(() => {
         jest.resetAllMocks();
     });
+
     test('should return the new transaction', async () => {
         const mockReq = {
             body: { username: "test1", type: "type1", amount: 100 },
@@ -745,10 +754,11 @@ describe("createTransaction", () => {
         }
 
         const newTransaction = { username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z" };
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
         verifyAuth.mockReturnValue({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' })
+            .mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions.prototype, "save").mockResolvedValueOnce(newTransaction);
 
         await createTransaction(mockReq, mockRes);
 
@@ -776,10 +786,13 @@ describe("createTransaction", () => {
         }
 
         const newTransaction = { username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z" };
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({ flag: false, cause: "Unauthorized" });
+        verifyAuth.mockReturnValueOnce({ flag: false, cause: "Unauthorized" });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' })
+            .mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions.prototype, "save").mockResolvedValueOnce(newTransaction);
+
+
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -800,12 +813,14 @@ describe("createTransaction", () => {
             }
         }
 
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        transactions.prototype.save.mockImplementation(() => {
+        verifyAuth.mockReturnValue({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' })
+            .mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        transactions.prototype.save.mockImplementationOnce(() => {
             throw new Error("Internal error");
         })
-        verifyAuth.mockReturnValue({ flag: true });
+
         await createTransaction(mockReq, mockRes);
 
         expect(User.findOne).toHaveBeenCalled();
@@ -829,10 +844,13 @@ describe("createTransaction", () => {
         }
 
         const newTransaction = { username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z" };
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' })
+            .mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions.prototype, "save").mockResolvedValueOnce(newTransaction);
+
+
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -854,10 +872,12 @@ describe("createTransaction", () => {
         }
 
         const newTransaction = { username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z" };
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' })
+            .mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions.prototype, "save").mockResolvedValueOnce(newTransaction);
+
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -879,10 +899,11 @@ describe("createTransaction", () => {
         }
 
         const newTransaction = { username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z" };
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' })
+            .mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' });        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
+        jest.spyOn(transactions.prototype, "save").mockResolvedValueOnce(newTransaction);
+
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -904,11 +925,12 @@ describe("createTransaction", () => {
         }
 
         const newTransaction = { username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z" };
-        jest.spyOn(User, "findOne").mockResolvedValueOnce("")
-            .mockResolvedValue({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce(null)
+            .mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions.prototype, "save").mockResolvedValueOnce(newTransaction);
+
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -930,11 +952,12 @@ describe("createTransaction", () => {
         }
 
         const newTransaction = { username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z" };
+        verifyAuth.mockReturnValueOnce({ flag: true });
         jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' })
-            .mockResolvedValue("");
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({ flag: true });
+            .mockResolvedValueOnce(null);
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions.prototype, "save").mockResolvedValueOnce(newTransaction);
+
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -956,11 +979,12 @@ describe("createTransaction", () => {
         }
 
         const newTransaction = { username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z" };
+        verifyAuth.mockReturnValueOnce({ flag: true });
         jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test2', email: 'test2@example.com', role: 'Admin' })
-            .mockResolvedValue({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({ flag: true });
+            .mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions.prototype, "save").mockResolvedValueOnce(newTransaction);
+
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -982,10 +1006,11 @@ describe("createTransaction", () => {
         }
 
         const newTransaction = { username: "test1", type: "type1", amount: 100, date: "2023-05-14T14:27:59.045Z" };
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: 'test1', email: 'test1@example.com', role: 'Admin' });
-        jest.spyOn(categories, "findOne").mockResolvedValue("");
-        jest.spyOn(transactions.prototype, "save").mockResolvedValue(newTransaction);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' })
+            .mockResolvedValueOnce({ username: 'test1', email: 'test1@example.com', role: 'Admin' });          jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
+        jest.spyOn(transactions.prototype, "save").mockResolvedValueOnce(newTransaction);
+
         await createTransaction(mockReq, mockRes);
 
         expect(transactions.prototype.save).not.toHaveBeenCalled();
@@ -998,6 +1023,7 @@ describe("getAllTransactions", () => {
     afterEach(() => {
         jest.resetAllMocks();
     });
+
     test('should return empty list if there are no transactions', async () => {
         const mockReq = {};
         const mockRes = {
@@ -1008,8 +1034,8 @@ describe("getAllTransactions", () => {
             }
         }
 
-        jest.spyOn(transactions, "aggregate").mockResolvedValue([]);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce([]);
 
         await getAllTransactions(mockReq, mockRes);
 
@@ -1040,8 +1066,8 @@ describe("getAllTransactions", () => {
                 username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: { type: "type2", color: "color2" }
             }];
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
         verifyAuth.mockReturnValue({ flag: true });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getAllTransactions(mockReq, mockRes);
 
@@ -1073,8 +1099,8 @@ describe("getAllTransactions", () => {
                 username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: { type: "type2", color: "color2" }
             }];
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({ flag: false, cause: "Unauthorized" });
+        verifyAuth.mockReturnValueOnce({ flag: false, cause: "Unauthorized" });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getCategories(mockReq, mockRes);
 
@@ -1104,9 +1130,8 @@ describe("getAllTransactions", () => {
                 username: "test", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: { type: "type2", color: "color2" }
             }];
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({ flag: true });
-        transactions.aggregate.mockImplementation(() => {
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        transactions.aggregate.mockImplementationOnce(() => {
             throw new Error("Internal error");
         })
 
@@ -1119,7 +1144,6 @@ describe("getAllTransactions", () => {
 })
 
 describe("getTransactionsByUser", () => {
-
     afterEach(() => {
         jest.clearAllMocks();
     });
@@ -1251,6 +1275,7 @@ describe("getTransactionsByUserByCategory", () => {
     afterEach(() => {
         jest.resetAllMocks();
     });
+
     test('admin route - should return empty list if there are no transactions for that user and category', async () => {
         const mockReq = {
             url: "transactions/users/test/category/type1",
@@ -1264,10 +1289,11 @@ describe("getTransactionsByUserByCategory", () => {
             }
         }
 
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "admin" });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockResolvedValue([]);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "admin" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce([]);
+
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1301,10 +1327,10 @@ describe("getTransactionsByUserByCategory", () => {
                 username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: { type: "type1", color: "color1" }
             }];
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "admin" });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "admin" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1330,10 +1356,10 @@ describe("getTransactionsByUserByCategory", () => {
             }
         }
 
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "user" });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockResolvedValue([]);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "user" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce([]);
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1367,10 +1393,10 @@ describe("getTransactionsByUserByCategory", () => {
                 username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: { type: "type1", color: "color1" }
             }];
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "user" });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "user" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1396,12 +1422,12 @@ describe("getTransactionsByUserByCategory", () => {
             }
         }
 
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "admin" });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockImplementation(() => {
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "admin" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockImplementationOnce(() => {
             throw new Error("Internal error");
         });
-        verifyAuth.mockReturnValue({ flag: true });
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1425,12 +1451,12 @@ describe("getTransactionsByUserByCategory", () => {
             }
         }
 
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "user" });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockImplementation(() => {
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "user" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockImplementationOnce(() => {
             throw new Error("Internal error");
         });
-        verifyAuth.mockReturnValue({ flag: true });
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1460,10 +1486,10 @@ describe("getTransactionsByUserByCategory", () => {
                 username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: { type: "type1", color: "color1" }
             }];
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "admin" });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({ flag: false, cause: "Unauthorized" });
+        verifyAuth.mockReturnValueOnce({ flag: false, cause: "Unauthorized" });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "admin" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1493,10 +1519,10 @@ describe("getTransactionsByUserByCategory", () => {
                 username: "test", amount: 50, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: { type: "type1", color: "color1" }
             }];
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "user" });
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({ flag: false, cause: "Unauthorized" });
+        verifyAuth.mockReturnValueOnce({ flag: false, cause: "Unauthorized" });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "user" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1517,10 +1543,10 @@ describe("getTransactionsByUserByCategory", () => {
             json: jest.fn()
         }
 
-        jest.spyOn(User, "findOne").mockResolvedValue(null);
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(null);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce(null);
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(null);
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1541,10 +1567,10 @@ describe("getTransactionsByUserByCategory", () => {
             json: jest.fn()
         }
 
-        jest.spyOn(User, "findOne").mockResolvedValue(null);
-        jest.spyOn(categories, "findOne").mockResolvedValue({ type: "type1", color: "color1" });
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(null);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce(null);
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({ type: "type1", color: "color1" });
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(null);
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1565,10 +1591,10 @@ describe("getTransactionsByUserByCategory", () => {
             json: jest.fn()
         }
 
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "admin" });
-        jest.spyOn(categories, "findOne").mockResolvedValue(null);
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(null);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "admin" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(null);
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1589,10 +1615,10 @@ describe("getTransactionsByUserByCategory", () => {
             json: jest.fn()
         }
 
-        jest.spyOn(User, "findOne").mockResolvedValue({ username: "test", email: "test@test.com", role: "user" });
-        jest.spyOn(categories, "findOne").mockResolvedValue(null);
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(null);
-        verifyAuth.mockReturnValue({ flag: true });
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(User, "findOne").mockResolvedValueOnce({ username: "test", email: "test@test.com", role: "user" });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(null);
 
         await getTransactionsByUserByCategory(mockReq, mockRes);
 
@@ -1608,6 +1634,7 @@ describe("getTransactionsByGroup", () => {
     afterEach(() => {
         jest.resetAllMocks();
     });
+
     test('admin route - should return empty list if there are no group transactions', async () => {
         const mockReq = {
             url: "transactions/groups/group1",
@@ -1621,13 +1648,13 @@ describe("getTransactionsByGroup", () => {
             }
         }
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        verifyAuth.mockReturnValueOnce({flag: true});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue([]);
         jest.spyOn(User, "findOne")
             .mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
-                .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({flag: true});
+            .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce([]);
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1664,12 +1691,12 @@ describe("getTransactionsByGroup", () => {
             {username: "test3", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        verifyAuth.mockReturnValueOnce({flag: true});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1700,13 +1727,13 @@ describe("getTransactionsByGroup", () => {
             }
         }
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue([]);
+        verifyAuth.mockReturnValueOnce({flag: true});
         jest.spyOn(User, "findOne")
             .mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
             .mockResolvedValueOnce({username: "test3", email: "test@test.com", role: "Regular"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce([]);
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1743,12 +1770,12 @@ describe("getTransactionsByGroup", () => {
             {username: "test3", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValueOnce({flag: true});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1787,12 +1814,12 @@ describe("getTransactionsByGroup", () => {
             {username: "test3", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        verifyAuth.mockReturnValueOnce({flag: false, cause: "Unauthorized"});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({flag: false, cause: "Unauthorized"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1822,12 +1849,12 @@ describe("getTransactionsByGroup", () => {
             {username: "test3", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValueOnce({flag: false, cause: "Unauthorized"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({flag: false, cause: "Unauthorized"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1857,11 +1884,11 @@ describe("getTransactionsByGroup", () => {
             {username: "test3", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue("");
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce(null);
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1891,11 +1918,11 @@ describe("getTransactionsByGroup", () => {
             {username: "test3", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue("");
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce(null);
+        verifyAuth.mockReturnValueOnce({flag: true});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1917,14 +1944,14 @@ describe("getTransactionsByGroup", () => {
             }
         }
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        verifyAuth.mockReturnValueOnce({ flag: true });
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        transactions.aggregate.mockImplementation(() => {
+        transactions.aggregate.mockImplementationOnce(() => {
             throw new Error("Internal error");
         })
-        verifyAuth.mockReturnValue({ flag: true });
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1956,14 +1983,14 @@ describe("getTransactionsByGroup", () => {
             {username: "test3", amount: 50, type: "type2", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type2", color: "color2"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
+        verifyAuth.mockReturnValueOnce({ flag: true });
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "Regular"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        transactions.aggregate.mockImplementation(() => {
+        transactions.aggregate.mockImplementationOnce(() => {
             throw new Error("Internal error");
         })
-        verifyAuth.mockReturnValue({ flag: true });
 
         await getTransactionsByGroup(mockReq, mockRes);
 
@@ -1977,6 +2004,7 @@ describe("getTransactionsByGroupByCategory", () => {
     afterEach(() => {
         jest.resetAllMocks();
     });
+
     test('admin route - should return the list of transactions for that group and category', async () => {
         const mockReq = {url: "/transactions/groups/group1/category/type1",
             params: [{name: "group1", category: "type1"}]};
@@ -1996,14 +2024,13 @@ describe("getTransactionsByGroupByCategory", () => {
             {username: "test3", amount: 150, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type1", color: "color1"}}];
 
+        verifyAuth.mockReturnValueOnce({flag: true});
         jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
         jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
         jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
-
-        verifyAuth.mockReturnValue({flag: true});
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
@@ -2041,18 +2068,17 @@ describe("getTransactionsByGroupByCategory", () => {
 
         jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
+        verifyAuth.mockReturnValueOnce({flag: true});
         jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
         .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-   
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
         expect(Group.findOne).toHaveBeenCalled();
+        expect(categories.findOne).toHaveBeenCalled();
         expect(User.findOne).toHaveBeenCalled();
-        expect(categories.findOne).toHaveBeenCalled()
         expect(transactions.aggregate).toHaveBeenCalled();
         expect(mockRes.status).toHaveBeenCalledWith(200);
         expect(mockRes.json).toHaveBeenCalledWith({data:
@@ -2076,19 +2102,19 @@ describe("getTransactionsByGroupByCategory", () => {
 
         const retrievedTransactions = [];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        verifyAuth.mockReturnValueOnce({flag: true});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
         expect(Group.findOne).toHaveBeenCalled();
+        expect(categories.findOne).toHaveBeenCalled();
         expect(User.findOne).toHaveBeenCalled();
-        expect(categories.findOne).toHaveBeenCalled()
         expect(transactions.aggregate).toHaveBeenCalled();
         expect(mockRes.status).toHaveBeenCalledWith(200);
         expect(mockRes.json).toHaveBeenCalledWith({data:
@@ -2110,19 +2136,19 @@ describe("getTransactionsByGroupByCategory", () => {
 
         const retrievedTransactions = [];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
         expect(Group.findOne).toHaveBeenCalled();
+        expect(categories.findOne).toHaveBeenCalled();
         expect(User.findOne).toHaveBeenCalled();
-        expect(categories.findOne).toHaveBeenCalled()
         expect(transactions.aggregate).toHaveBeenCalled();
         expect(mockRes.status).toHaveBeenCalledWith(200);
         expect(mockRes.json).toHaveBeenCalledWith({data:
@@ -2150,13 +2176,13 @@ describe("getTransactionsByGroupByCategory", () => {
             {username: "test3", amount: 150, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type1", color: "color1"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        verifyAuth.mockReturnValueOnce({flag: false, cause: "Unauthorized"});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
-        verifyAuth.mockReturnValue({flag: false, cause: "Unauthorized"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
@@ -2184,13 +2210,13 @@ describe("getTransactionsByGroupByCategory", () => {
             {username: "test3", amount: 150, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type1", color: "color1"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValueOnce({flag: false, cause: "Unauthorized"});
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
-        verifyAuth.mockReturnValue({flag: false, cause: "Unauthorized"});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
@@ -2218,12 +2244,12 @@ describe("getTransactionsByGroupByCategory", () => {
             {username: "test3", amount: 150, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type1", color: "color1"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue(null);
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        verifyAuth.mockReturnValueOnce({flag: true});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce(null);
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
@@ -2251,12 +2277,12 @@ describe("getTransactionsByGroupByCategory", () => {
             {username: "test3", amount: 150, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type1", color: "color1"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue(null);
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce(null);
+        verifyAuth.mockReturnValueOnce({flag: true});
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
@@ -2284,13 +2310,13 @@ describe("getTransactionsByGroupByCategory", () => {
             {username: "test3", amount: 150, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type1", color: "color1"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        verifyAuth.mockReturnValueOnce({flag: true});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue(null);
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
@@ -2318,13 +2344,13 @@ describe("getTransactionsByGroupByCategory", () => {
             {username: "test3", amount: 150, type: "type1", date: "2023-05-14T14:27:59.045Z",
                 categories_info: {type: "type1", color: "color1"}}];
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        verifyAuth.mockReturnValueOnce({flag: true});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockResolvedValue(retrievedTransactions);
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce(null);
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue(null);
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockResolvedValueOnce(retrievedTransactions);
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
@@ -2344,15 +2370,15 @@ describe("getTransactionsByGroupByCategory", () => {
             }
         }
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        verifyAuth.mockReturnValueOnce({flag: true});
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockImplementation(() => {
-            throw new Error("Internal error")
-        });
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockImplementationOnce(() => {
+            throw new Error("Internal error")
+        });
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 
@@ -2372,15 +2398,15 @@ describe("getTransactionsByGroupByCategory", () => {
             }
         }
 
-        jest.spyOn(Group, "findOne").mockResolvedValue({name : "group1", members: [{email: "test@test.com"},
+        jest.spyOn(Group, "findOne").mockResolvedValueOnce({name : "group1", members: [{email: "test@test.com"},
                 {email: "test3@test.com"}]});
-        jest.spyOn(transactions, "aggregate").mockImplementation(() => {
-            throw new Error("Internal error");
-        });
+        verifyAuth.mockReturnValueOnce({flag: true});
+        jest.spyOn(categories, "findOne").mockResolvedValueOnce({type: "type1", color: "color1"});
         jest.spyOn(User, "findOne").mockResolvedValueOnce({username: "test", email: "test@test.com", role: "User"})
             .mockResolvedValueOnce({username: "test3", email: "test3@test.com", role: "Admin"});
-        jest.spyOn(categories, "findOne").mockResolvedValue({type: "type1", color: "color1"});
-        verifyAuth.mockReturnValue({flag: true});
+        jest.spyOn(transactions, "aggregate").mockImplementationOnce(() => {
+            throw new Error("Internal error");
+        });
 
         await getTransactionsByGroupByCategory(mockReq, mockRes);
 

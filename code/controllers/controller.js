@@ -488,7 +488,7 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
             const adminAuth = verifyAuth(req, res, {authType: "Admin"})
             if (!adminAuth.flag)
                 return res.status(401).json({error : adminAuth.cause});
-            console.log("here")
+
             group = await Group.findOne({name: name});
             if (!group)
                 return res.status(400).json({error: "Group not found"});
@@ -501,7 +501,7 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
             if (!groupAuth.flag)
                 return res.status(401).json({error: groupAuth.cause});
         }
-        console.log("here2")
+
         const category = await categories.findOne({type : type});
         if(!category)
             return res.status(400).json({error : "Category not found"});
@@ -526,7 +526,7 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
             { $unwind: "$categories_info" },
             { $match: { type: type , username: { $in: usernames } } }
         ]);
-        console.log("here")
+
         if(result.length !== 0)
             data = result.map(v => Object.assign({}, { username: v.username,
                 amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }));
