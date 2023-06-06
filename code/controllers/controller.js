@@ -116,15 +116,13 @@ export const deleteCategory = async (req, res) => {
                 return res.status(400).json({ message: "Category does not exist" });
             }
         }
-        //find all the transactions sorted from the oldest to the newest
-        let foundCategories = await categories.find({}).sort({ createdAt: 1 }).select({ type: 1, _id: 0 });
         if (types.length < num_cat) {
             for (let type of types) {
 
                 let c = await categories.findOneAndDelete({ type: type });
                 count += 1;
             }
-            let foundCategories = await categories.find({}).sort({ createdAt: 1 }).limit(1).select({ type: 1, _id: 0 });
+            let foundCategories = await categories.find({}).sort({ createdAt: 1 }).limit(1).select({ type: 1, _id: 0 })
             for (let type of types) {
 
                 await transactions.updateMany({
