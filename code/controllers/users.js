@@ -117,7 +117,7 @@ export const createGroup = async (req, res) => {
           emailAlready_inGroup.push({email :memberEmails[i]});
         }
         else {
-          members.push({email : user.email});
+          members.push({email : user.email, user : user});
         }
       }
     }
@@ -125,7 +125,7 @@ export const createGroup = async (req, res) => {
     if (counter === (memberEmails.length)) return res.status(400).json({ error: "the `memberEmails` either do not exist or are already in a group" })
     else {
       if (!memberEmails.includes(us.email))
-        members.push({email : us.email})
+        members.push({email : us.email, user : us})
       const gr = new Group({ name, members });
       let group = await gr.save();
        return  res.status(200).json({

@@ -1973,7 +1973,7 @@ describe("getTransactionsByGroup", () => {
     });
 })
 
-describe.only("getTransactionsByGroupByCategory", () => { 
+describe("getTransactionsByGroupByCategory", () => { 
     afterEach(() => {
         jest.resetAllMocks();
     });
@@ -2020,7 +2020,7 @@ describe.only("getTransactionsByGroupByCategory", () => {
         );
     });
 
-    test.only('user route - should return the list of transactions for that group and category', async () => {
+    test('user route - should return the list of transactions for that group and category', async () => {
         const mockReq = {url: "/groups/group1/transactions/category/type1",
             params: [{name: "group1", category: "type1"}]};
         const mockRes = {
