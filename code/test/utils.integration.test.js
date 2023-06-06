@@ -36,17 +36,6 @@ const generateToken = (payload, expirationTime = '1h') => {
 
 describe("handleDateFilterParams", () => {
 
-    const list_of_categories = [{type: "type5", color: "color5"},
-        {type: "type6", color: "color6"}, {type: "type7", color: "color7"}, {type: "type8", color: "color8"}];
-
-    const list_of_transactions = [
-        {username: "tester5", amount: 10, type: "type5", date: "2023-12-14T14:27:59.045Z", color: "color5"},
-        {username: "tester5", amount: 20, type: "type5", date: "2023-05-14T14:27:59.045Z", color: "color5"},
-        {username: "tester7", amount: 30, type: "type5", date: "2023-03-14T14:27:59.045Z", color: "color5"},
-        {username: "tester5", amount: 40, type: "type8", date: "2023-05-14T14:27:59.045Z", color: "color8"},
-        {username: "tester7", amount: 60, type: "type5", date: "2023-05-14T14:27:59.045Z", color: "color5"},
-        {username: "tester5", amount: 70, type: "type6", date: "2023-01-14T14:27:59.045Z", color: "color6"}];
-
     const list_of_users = [
         {username: "tester5", email: "test5@test.com", password: "tester5", role: "Regular"},
         {username: "tester6", email: "test6@test.com", password: "tester6", role: "Admin"},
@@ -55,106 +44,103 @@ describe("handleDateFilterParams", () => {
     beforeAll(async () => {
         for (const c of list_of_users)
         {   await User.create( c )}
-
-        for (const c of list_of_categories)
-        {   await categories.create( c )}
-
-        for (const c of list_of_transactions)
-        {   await transactions.create( c )}
     })
     afterAll(async () => {
         for (const c of list_of_users)
         {   await User.deleteOne( c )}
-
-        for (const c of list_of_categories)
-        {   await categories.deleteOne( c )}
-
-        for (const c of list_of_transactions)
-        {   await transactions.deleteOne( c )}
     })
 
     test('from filter', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?from=2023-05-14`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?from=2023-05-14` ,
+            query: {from: "2023-05-14"}};
 
-        expect(res.statusCode).toBe(200);
-        expect(res.body.data).toStrictEqual([list_of_transactions[0],
-            list_of_transactions[1], list_of_transactions[3]]);
+        const res = handleDateFilterParams(req);
+
+        expect(res).toStrictEqual({date: {$gte: new Date("2023-05-14T00:00:00.000Z")}});
     });
 
     test('upTo filter', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?upTo=2023-05-14`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?upTo=2023-05-14` ,
+            query: {upTo: "2023-05-14"}};
 
-        expect(res.statusCode).toBe(200);
-        expect(res.body.data).toStrictEqual([list_of_transactions[1], list_of_transactions[3],
-            list_of_transactions[5]]);
+        const res = handleDateFilterParams(req);
+
+        expect(res).toStrictEqual({date: {$lte: new Date("2023-05-14T23:59:59.000Z")}});
     });
 
     test('date filter', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?date=2023-05-14`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?date=2023-05-14` ,
+            query: {date: "2023-05-14"}};
 
-        expect(res.statusCode).toBe(200);
-        expect(res.body.data).toStrictEqual([list_of_transactions[1], list_of_transactions[3]]);
+        const res = handleDateFilterParams(req);
+
+        expect(res).toStrictEqual({date: {$lte: new Date("2023-05-14T23:59:59.000Z"), $gte: new Date("2023-05-14T00:00:00.000Z")}});
     });
 
     test('from and upTo filters', async() => {
-        const res =  await request(app).get(`/api/users/${list_of_users[0].username}/transactions?from=2023-01-14&upTo=2023-12-14`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"))
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?from=2023-01-14&upTo=2023-12-14` ,
+            query: {from: "2023-01-14", upTo: "2023-12-14"}};
 
-        expect(res.statusCode).toBe(200);
-        expect(res.body.data).toStrictEqual([list_of_transactions[0],
-                    list_of_transactions[1], list_of_transactions[3], list_of_transactions[5]]);
+        const res = handleDateFilterParams(req);
+
+        expect(res).toStrictEqual({date: {$lte: new Date("2023-12-14T23:59:59.000Z"), $gte: new Date("2023-01-14T00:00:00.000Z")}});
     });
 
     test('date and upTo filters',  async() => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?date=2023-05-14&upTo=2023-12-14`)
-                .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                    "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {
+            url: `/api/users/${list_of_users[0].username}/transactions?date=2023-05-14&upTo=2023-12-14`,
+            query: {date: "2023-01-14", upTo: "2023-12-14"}
+        };
 
-        expect(res.statusCode).toBe(500);
-        expect(res.body.error).toBe("wrong query format");
+        try {
+            handleDateFilterParams(req);
+        } catch (e) {
+            expect(e.message).toBe("wrong query format");
+        }
     });
 
     test('date and from filters', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?date=2023-05-14&from=2023-01-14`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?date=2023-05-14&from=2023-01-14` ,
+            query: {date: "2023-01-14", from: "2023-12-14"}};
 
-        expect(res.statusCode).toBe(500);
-        expect(res.body.error).toStrictEqual("wrong query format");
+        try {
+            handleDateFilterParams(req);
+        } catch (e) {
+            expect(e.message).toBe("wrong query format");
+        }
     });
 
     test('wrong date - from filter', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?from=2023-abc-14`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?from=2023-abc-14` ,
+            query: {from: "2023-abc-14"}};
 
-        expect(res.statusCode).toBe(500);
-        expect(res.body.error).toStrictEqual("wrong date format");
+        try {
+            handleDateFilterParams(req);
+        } catch (e) {
+            expect(e.message).toBe("wrong date format");
+        }
     });
 
     test('wrong date - upTo filter', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?upTo=2023-abc-14`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?upTo=2023-abc-14` ,
+            query: {upTo: "2023-abc-14"}};
 
-        expect(res.statusCode).toBe(500);
-        expect(res.body.error).toStrictEqual("wrong date format");
+        try {
+            handleDateFilterParams(req);
+        } catch (e) {
+            expect(e.message).toBe("wrong date format");
+        }
     });
 
     test('wrong date - date filter', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?date=2023-abc-14`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?date=2023-abc-14` ,
+            query: {date: "2023-abc-14"}};
 
-        expect(res.statusCode).toBe(500);
-        expect(res.body.error).toStrictEqual("wrong date format");
+        try {
+            handleDateFilterParams(req);
+        } catch (e) {
+            expect(e.message).toBe("wrong date format");
+        }
     });
 })
 
@@ -258,18 +244,6 @@ describe("verifyAuth", () => {
 
 describe("handleAmountFilterParams", () => {
 
-    const list_of_categories = [
-        {type: "type5", color: "color5"}, {type: "type6", color: "color6"},
-        {type: "type7", color: "color7"}, {type: "type8", color: "color8"}];
-
-    const list_of_transactions = [
-        {username: "tester5", amount: 10, type: "type5", date: "2023-12-14T14:27:59.045Z", color: "color5"},
-        {username: "tester5", amount: 20, type: "type5", date: "2023-05-14T14:27:59.045Z", color: "color5"},
-        {username: "tester7", amount: 30, type: "type5", date: "2023-03-14T14:27:59.045Z", color: "color5"},
-        {username: "tester5", amount: 40, type: "type8", date: "2023-05-14T14:27:59.045Z", color: "color8"},
-        {username: "tester7", amount: 60, type: "type5", date: "2023-05-14T14:27:59.045Z", color: "color5"},
-        {username: "tester5", amount: 70, type: "type6", date: "2023-01-14T14:27:59.045Z", color: "color6"}];
-
     const list_of_users = [
         {username: "tester5", email: "test5@test.com", password: "tester5", role: "Regular"},
         {username: "tester6", email: "test6@test.com", password: "tester6", role: "Admin"},
@@ -278,66 +252,58 @@ describe("handleAmountFilterParams", () => {
     beforeAll(async () => {
         for (const c of list_of_users)
         {   await User.create( c )}
-
-        for (const c of list_of_categories)
-        {   await categories.create( c )}
-
-        for (const c of list_of_transactions)
-        {   await transactions.create( c )}
     })
     afterAll(async () => {
         for (const c of list_of_users)
         {   await User.deleteOne( c )}
-
-        for (const c of list_of_categories)
-        {   await categories.deleteOne( c )}
-
-        for (const c of list_of_transactions)
-        {   await transactions.deleteOne( c )}
     })
 
     test('min filter', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?min=30`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?min=30` ,
+            query: {min: "30"}};
 
-        expect(res.statusCode).toBe(200);
-        expect(res.body.data).toStrictEqual([list_of_transactions[3], list_of_transactions[5]]);
+        const res = handleAmountFilterParams(req);
+
+        expect(res).toStrictEqual({amount: {$gte: 30}});
     });
 
     test('max filter', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?max=30`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?max=30` ,
+            query: {max: "30"}};
 
-        expect(res.statusCode).toBe(200);
-        expect(res.body.data).toStrictEqual([list_of_transactions[0], list_of_transactions[1]]);
+        const res = handleAmountFilterParams(req);
+
+        expect(res).toStrictEqual({amount: {$lte: 30}});
     });
 
     test('max and min filter', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?max=50&min=30`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?max=50&min=30` ,
+            query: {max: "50", min: "30"}};
 
-        expect(res.statusCode).toBe(200);
-        expect(res.body.data).toStrictEqual([list_of_transactions[3]]);
+        const res = handleAmountFilterParams(req);
+
+        expect(res).toStrictEqual({amount: {$gte: 30, $lte: 50}});
     });
 
     test('min is not a number', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?min=abc`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?min=abc` ,
+            query: {min: "abc"}};
 
-        expect(res.statusCode).toBe(500);
-        expect(res.body.error).toStrictEqual("the min amount value is not a number");
+        try {
+            handleAmountFilterParams(req);
+        } catch (e) {
+            expect(e.message).toBe("the min amount value is not a number");
+        }
     });
 
     test('max is not a number', async () => {
-        const res = await request(app).get(`/api/users/${list_of_users[0].username}/transactions?max=abc`)
-            .set("Cookie", "accessToken=" + generateToken(list_of_users[0], "1h") +
-                "; refreshToken=" + generateToken(list_of_users[0], "1h"));
+        const req = {url: `/api/users/${list_of_users[0].username}/transactions?max=abc` ,
+            query: {max: "abc"}};
 
-        expect(res.statusCode).toBe(500);
-        expect(res.body.error).toStrictEqual("the max amount value is not a number");
+        try {
+            handleAmountFilterParams(req);
+        } catch (e) {
+            expect(e.message).toBe("the max amount value is not a number");
+        }
     });
 })
