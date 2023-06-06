@@ -77,10 +77,10 @@ export const createGroup = async (req, res) => {
     const simpleAuth = verifyAuth(req, res, { authType: "Simple" })
     if (!simpleAuth.flag)
       return res.status(401).json({ error: simpleAuth.cause });
-    const { name, memberEmails } = req.body;
+    let { name, memberEmails } = req.body;
     if (!name || !memberEmails || name == "")
       return res.status(400).json({ error: "Invalid request" })
-
+    memberEmails = [...new Set(memberEmails)]
     const groupFind = await Group.findOne({ name: name });
     let members = [];  //change the name to have the same name of the model
     //error 401 is returned if there is already an existing group with the same name
@@ -208,7 +208,6 @@ export const getGroup = async (req, res) => {
  */
 export const addToGroup = async (req, res) => {
   try {
-
     let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
 
     const reAd = new RegExp("^.*/groups/[^/]+/insert$");
@@ -238,7 +237,9 @@ export const addToGroup = async (req, res) => {
     }
     if (!req.body.emails)
       return res.status(400).json({ error: "Bad request" });
-    //--> to be inserted?   || req.body.emails.length==0
+      req.body.emails = [...new Set(req.body.emails)]; //remove duplicates
+
+   
     const membersNotFound = [];
     const alreadyInGroup = [];
     const newMembers = [];
