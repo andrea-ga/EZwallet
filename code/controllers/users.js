@@ -299,7 +299,6 @@ export const removeFromGroup = async (req, res) => {
     const reUs = new RegExp("^.*groups/[^/]+/remove$");
     let emailformat = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ;
     const cookie = req.cookies
-
     const name = req.params.name;
     
     let group = await Group.findOne({ name: req.params.name });
