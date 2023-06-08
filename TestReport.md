@@ -32,34 +32,328 @@
     step7: unit auth + unit users + unit controller + unit utils
 
 
-
-
 # Tests
 
 | Test case name | Object(s) tested | Test level | Technique used |
 |--|--|--|--|
-| **filters** |
-| handleDateFilterParams | date parameters | unit, integration | statement coverage |
-| handleAmountFilterParams| amount parameter | unit, integration | statement coverage |
-| **authentication** |
-| verifyAuth | authentication | unit, integration | statement coverage |
-| registration | user | unit, integration | statement coverage |
-| registerAdmin | admin | unit, integration | statement coverage |
-| login | user | unit, integration | statement coverage |
-| logout | user | unit, integration | statement coverage |
-| **categories** |
-| createCategory | category | unit, integration | statement coverage |
-| updateCategory | category | unit, integration | statement coverage |
-| getCategories | category | unit, integration | statement coverage |
-| deleteCategory | category | unit, integration | statement coverage |
-| **transactions** |
-| createTransaction | transaction | unit, integration | statement coverage |
-| getTransactionsByUser | transaction, user | unit, integration | statement coverage |
-| getTransactionsByUserByCategory | transaction, user, category | unit, integration | statement coverage |
-| getTransactionsByGroup | transaction, group  | unit, integration | statement coverage |
-| getTransactionsByGroupByCategory | transaction, group, category | unit, integration | statement coverage |
-| deleteTransaction | transaction, authentication | unit, integration | statement coverage |
-| deleteTransactions | transaction, authentication | unit, integration | statement coverage |
+| **handleDateFilterParams** |
+| from filter | date | unit, integration | statement coverage |
+| upTo filter | date | unit, integration | statement coverage |
+| date filter | date | unit, integration | statement coverage |
+| from and upTo filters | date | unit, integration | statement coverage |
+| date and upTo filters | date | unit, integration | statement coverage |
+| date and from filters | date | unit, integration | statement coverage |
+| wrong date - from filters | date | unit, integration | statement coverage |
+| wrong date - upTo filter | date | unit, integration | statement coverage |  
+| wrong date - date filter | date | unit, integration | statement coverage |  
+| **handleAmountFilterParams** |
+| min filter | amount parameter | unit, integration | statement coverage |
+| max filter | amount parameter | unit, integration | statement coverage |
+| max and min filter | amount parameter | unit, integration | statement coverage |
+| min is not a number | amount parameter | unit, integration | statement coverage |
+| max is not a number | amount parameter | unit, integration | statement coverage |
+
+| Test case name | Object(s) tested | Test level | Technique used |
+|--|--|--|--|
+| **verifyAuth** |
+| no cookie | authentication | unit | statement coverage |
+| Simple auth | authentication | unit | statement coverage |
+| Simple wrong decoded token on access | authentication | unit | statement coverage |
+| Simple wrong decoded token on refresh | authentication | unit | statement coverage |
+| Simple wrong corrispondence between token | authentication | unit | statement coverage |
+| Admin auth | authentication | unit  | statement coverage |
+| Admin auth wrong token | authentication | unit | statement coverage |
+| User auth | authentication | unit | statement coverage |
+| User auth wrong token | authentication | unit | statement coverage |
+| Group auth | authentication | unit | statement coverage | 
+| Group auth wrong | authentication | unit | statement coverage |
+| Toekn expired then okay User | authentication | unit | statement coverage |
+| Token expired then no okay User | authentication | unit | statement coverage |
+| Token expired Admin ok | authentication | unit | statement coverage |
+| Token expired Admin no ok | authentication | unit | statement coverage |
+| Token expired Group ok | authentication | unit  | statement coverage |
+| Token expired Simple ok | authentication | unit | statement coverage |
+| Token expired Group no ok | authentication | unit | statement coverage |
+| 2 Tokens expired | authentication | unit  | statement coverage |
+| token expire plus other error | authentication | unit | statement coverage |
+| token expire plus other error | authentication | unit | statement coverage |
+| Token is missing information (username) | authentication | integration | statement coverage |
+| Token is missing information (role) | authentication | integration | statement coverage |
+| Token is missing information (email) | authentication | integration | statement coverage |
+| Token with different username | authentication | integration | statement coverage |
+| Token with different email | authentication | integration | statement coverage |
+| Access and refresh token expired | authentication | integration | statement coverage |
+
+| Test case name | Object(s) tested | Test level | Technique used |
+|--|--|--|--|
+| **registration** |
+| correct registration | user | unit, integration | statement coverage |
+| username already used | user | unit, integration | statement coverage |
+| email already used |  user | unit, integration | statement coverage |
+| email in wrong format | user | unit, integration | statement coverage |
+| Raise exception |  user | unit | statement coverage |
+| **registerAdmin** |
+| correct registration | admin | unit, integration | statement coverage |
+| username already used | admin | unit, integration | statement coverage |
+| email already used |  admin | unit, integration | statement coverage |
+| email in wrong format | admin | unit, integration | statement coverage |
+| Raise exception |  admin | unit | statement coverage |
+| **login** |
+| correct login  |  user | unit | statement coverage |
+| wrong params (no pwd) |  user | unit, integration | statement coverage |
+| email  wrong format |  user | unit, integration | statement coverage |
+| user not found | user | unit | statement coverage |
+| raise exception | user | unit | statement coverage |
+| Correct login regular user | user | integration | statement coverage |
+| No mail | user | integration | statement coverage |
+| Not registered yet | user | integration | statement coverage |
+| **logout** | 
+| raise exception | user, admin | unit | statement coverage |
+| correct logout | user, admin | unit | statement coverage |
+| user not found | user, admin | unit | statement coverage |
+| Unauthorized | user, admin | unit  | statement coverage | 
+| Correct logout after login | user, admin | unit | statement coverage |
+
+
+| Test case name | Object(s) tested | Test level | Technique used |
+|--|--|--|--|
+| **getUsers** |
+| should return empty list if there are no users | user, authentication | unit | statement coverage |
+| should retrieve list of all users | user, authentication | unit | statement coverage |
+| Unauthorized access | user, authentication | unit | statement coverage |
+| raise exception | user, authentication | unit | statement coverage |
+| should return Unauthorized |  user, authentication | integration | statement coverage |
+| should return all users | user, authentication | integration | statement coverage |
+| **getUser** |
+| admin login | user, authentication | unit | statement coverage |
+| no credentials | user, authentication | unit | statement coverage |
+| user not found | user, authentication | unit | statement coverage |
+| user search his profile | user, authentication | unit, integration | statement coverage |
+| raise exception | user, authentication | unit | statement coverage |
+| User try to take info of another user | user, authentication |integration | statement coverage |
+| Admin takes info of a user | user, authentication | integration | statement coverage |
+| **deleteUser** |
+| no admin privileges | user, authentication | unit | statement coverage | 
+| user not found | user, authentication | unit | statement coverage |
+| User successfully deleted and in a group | user, authentication | unit | statement coverage |
+| request body email is not present | user, authentication | integration | statement coverage |
+| User try to delete another user |  user, authentication | integration | statement coverage |
+| Admin delete another user |  user, authentication | integration | statement coverage | 
+| Admin try to delete another admin |  user, authentication | integration | statement coverage | 
+| Admin delete another user that the only member of a group |  user, authentication | integration | statement coverage |
+
+
+
+| Test case name | Object(s) tested | Test level | Technique used |
+|--|--|--|--|
+| **createGroup** |
+| Normal bhavior | user, authentication, group  | unit, integration | statement coverage |
+| Group with the same name already exist | user, authentication, group | unit | statement coverage |
+| No cookies | user, group | unit | statement coverage |
+| Email format not valid | user, authentication, group | unit, integration | statement coverage |
+| invalid request | user, group | unit, integration | statement coverage |
+| User create a group with only the creator present | user, group | integration | statement coverage |
+| User create a group with a wrong name |  user, group | integration | statement coverage |
+| Group creator already in a group |  user, group | integration | statement coverage |
+| User creates a group with all members already in a group |  user, group | integration | statement coverage |
+| **getGroups**|
+| admin request | user, authentication, group | unit, integration | statement |
+| no admin | user, authentication, group | unit, integration | statement |
+| No groups | user, authentication, group | unit | statement |
+| raise exception | user, authentication, group | unit | statement |
+| Admin get group | group, authentication | integration | statement coverage |
+| **getGroup** |
+| no cookies| user, authentication, group | unit | statement | 
+| user not in the group list | user, authentication, group | unit | statement |
+| admin doesn't find a group | user, authentication, group | unit | statement |
+| user not find a group | user, authentication, group | unit | statement |
+| raise exception | user, authentication, group | unit | statement coverage |
+| Admin get group | group, authentication | integration | statement coverage |
+| No admin cookie | group, authentication | integration | statement coverage |
+| No group found | group, authentication | integration | statement coverage | 
+| Group found and user present in members | group, user, authentication | integration  | statement coverage |
+| Group found and user not present in members | group, user, authentication | integration | stetement coverage |
+| **addToGroup** |
+| Group not found | group, authentication | unit | statement coverage |
+| admin request with wrong email format | group, authentication | unit | statement coverage |
+| user request not authorized  | group, authentication | unit | statement coverage |
+| user request group not found | group, authentication | unit | statement coverage |
+| user request, all ok | group, authentication | unit | statement coverage |
+| Bad request | group, authentication | unit | statement coverage |
+| User access with admin path | group, authentication | unit | statement coverage |
+| Admin add user to group | group, user, authentication | integration | statement coverage |
+| Admin add user to group with some users already in the group | user, group, authentication | integration | statement coverage |
+| Admin add user to group with some users already in the group |  user, group, authentication | integration | statement coverage |
+| User try to add an user to a group where he is not enrolled |  user, group, authentication | integration | statement coverage |
+| User try to add an user to a group where he is enrolled |  user, group, authentication | integration | statement coverage |
+| wrong request format, no field emails |  group, authentication | integration | statement coverage | 
+| No cookie | group, authentication | integration | coverage statement |
+| Group not found | group, authentication | integration | coverage statement| 
+
+| **removeFromGroup** |
+| Admin request but group has only one user | user, group, authentication | unit | statement coverage |
+| Admin request with valid group and members to remove | user, group, authentication | unit | statement coverage |
+| Admin request but wrong email format | user, group, authentication | unit | statement coverage |
+| Bad request | group, authentication | unit | statement coverage |
+| user request not authorized | user, group, authentication | unit | statement coverage |
+| user request with admin path | user, group, authentication | unit | statement coverage |
+| user request group not found | user, group, authentication | unit | statement coverage |
+| Admin request | user, group, authentication | unit | statement coverage |
+| Admin remove user from group of one memeber | user, authentication, group | integration | statement coverage |
+| Admin remove user from group |  user, authentication, group | integration | statement coverage |
+| User try to remove user from group without being authorized |  authentication, group | integration | statement coverage |
+| User try to remove user from group where he is enrolled |  user, authentication, group | integration | statement coverage |
+| Bad request |  user, authentication, group | integration | statement coverage |
+| Admin try to remove user that not exist from group |  user, authentication, group | integration | statement coverage |
+| **deleteGroup** |
+| success | group, authentication | unit | statement coverage |
+| not admin | group, authentication | unit | statement coverage |
+| bad request | group, authentication | unit | statement coverage |
+| group not found | group, authentication | unit | statement coverage |
+| Admin delete group | group, authentication | integration | statement coverage |
+| No admin cookie | group, authentication | integration | statement coverage |
+| No group found |  group, authentication | integration | statement coverage |
+| req error | group, authentication | integration | statement coverage |
+
+| Test case name | Object(s) tested | Test level | Technique used |
+|--|--|--|--|
+| **createCategory** | 
+| should return the new category | category | unit, integration | statement coverage |
+| raise exception | category | unit | statement coverage |
+| Unauthorized access | category | unit, integration | statement coverage |
+| empty type field | category | unit, integration | statement coverage |
+| empty color field| category | unit, integration | statement coverage |
+| type already present | category | unit, integration | statement coverage |
+| **updateCategory** | 
+| Update category | category | unit, integration | statement coverage |
+| Admin request to update existing category with transactions | category | unit | statement coverage | 
+| Admin request to update existing category without transactions | category | unit | statement coverage |
+| Admin request to update non-existing category | category | unit | statement coverage |
+| Admin request to update category with missing request body attributes | category | integration | statement coverage |
+| Non-admin request to update category | category | unit | statement coverage |
+| User unauthorized | category, authentication | integration | statement coverage |
+| Category not found | category | integration | statement coverage | 
+| Category already present | category | integration | statement coverage |
+| **deleteCategory** | 
+| Admin request to delete existing categories with transactions | category | unit, integration | statement coverage |
+| Admin request to delete non-existing categories | category | unit, integration | statement coverage |
+| Admin request to delete more categories than present in the database | category | unit, integration | statement coverage |
+| Admin request to delete the only category in the database | category | unit, integration | statement coverage |
+| Non-admin request to delete categories | category | unit, integration | statement coverage |
+| Invalid request with missing types | category | unit, integration | statement coverage |
+| Invalid request with empty type | category | unit, integration | statement coverage |
+| User unauthorized | category, authentication | integration | statement coverage |
+| Request body wrong |  category | integration | statement coverage |
+| Types is empty | category | integration | statement coverage |
+| Types include an empty string | category | integration | statement coverage |
+| We have 5 category and try to delete 6 category  | category | integration | statement coverage |
+| Try to delete all categories |  category | integration | statement coverage |
+| Try to delete 2 categories | category | integration | statement coverage |
+| **getCategories** | 
+| should return empty list if there are no categories | category | unit, intergration | statement coverage |
+| should retrieve list of all categories |  category | unit, intergration | statement coverage |  category | unit, intergration | statement coverage |
+| Unauthorized access |  category | unit, intergration | statement coverage |
+| raise exception |  category | unit, intergration | statement coverage |
+| **createTransaction** | transaction | unit, integration | statement coverage |
+| should return the new transaction | transaction | unit, integration | statement coverage |
+| Unauthorized access | transaction | unit, integration | statement coverage |
+| raise exception | transaction | unit | statement coverage |
+| empty username field | transaction | unit, integration | statement coverage |
+| empty type field | transaction | unit, integration | statement coverage |
+| amount field is not a number | transaction | unit, integration | statement coverage |
+| route param user not found | transaction | unit, integration | statement coverage |
+| req body user not found | transaction | unit, integration | statement coverage |
+| req body user and route param user dont match | transaction | unit, integration | statement coverage |
+| category not found | transaction | unit, integration | statement coverage |
+
+
+| Test case name | Object(s) tested | Test level | Technique used |
+|--|--|--|--|
+| **getAllTransactions** |
+| should return empty list if there are no transactions | transaction | unit, integration | statement coverage |
+| should retrieve list of all transactions |  transaction | unit, integration | statement coverage |
+| Unauthorized access | transaction | unit, integration | statement coverage |
+| raise exception | transaction | unit | statement coverage |
+| **getTransactionsByUser** | 
+| should return transactions for admin route | transaction, user | unit| statement coverage |
+| should return transactions for user route with date and amount filters | transaction, user | unit | statement coverage |
+| should return 400 error if user does not exist | transaction, user | unit | statement coverage | 
+| should return 401 error for unauthorized user |transaction, user | unit | statement coverage |
+| User search for another user transactions | user, transaction | integration | statement coverage |
+| User search for his transactions |  user, transaction | integration | statement coverage |
+| User search for his transactions with date filter |  user, transaction | integration | statement coverage |
+| User search for his transactions with amount filter | user, transaction | integration | statement coverage |
+| User search for his transactions with amount and date filter | user, transaction | integration | statement coverage |
+| Admin search for another user transactions |  user, transaction | integration | statement coverage |
+| No cookie |  user, transaction | integration | statement coverage |
+| User search for his transactions with amount and date filter second test |  user, transaction | integration | statement coverage |
+| **getTransactionsByUserByCategory** | 
+| admin route - should return empty list if there are no transactions for that user and category | transaction, user, category | unit, integration | statement coverage |
+| admin route - should return list of transactions for that user and category | transaction, user, category | unit, integration | statement coverage | 
+| user route - should return empty list if there are no transactions for that user and category |transaction, user, category | unit, integration | statement coverage |
+| user route - should return list of transactions for that user and category | transaction, user, category | unit, integration | statement coverage |
+| admin route - should return 500 if there is an error | transaction, user, category | unit, integration | statement coverage |
+| user route - should return 500 if there is an error | transaction, user, category | unit, integration | statement coverage |
+| admin route - should return 401 if user is not authorized | transaction, user, category | unit, integration | statement coverage |
+| user route - should return 401 if user is not authorized | transaction, user, category | unit, integration | statement coverage |
+| admin route - should return 400 if user does not exist | transaction, user, category | unit, integration | statement coverage |
+| user route - should return 400 if user does not exist | transaction, user, category | unit, integration | statement coverage |
+| admin route - should return 400 if category does not exist | transaction, user, category | unit, integration | statement coverage |
+| user route - should return 400 if category does not exist | transaction, user, category | unit, integration | statement coverage |
+| **getTransactionsByGroup** | 
+| admin route - should return empty list if there are no group transactions | transaction, group  | unit, integration | statement coverage |
+|  admin route - should retrieve list of all group transactions | transaction, group  | unit, integration | statement coverage | 
+| user route - should return empty list if there are no group transactions | transaction, group  | unit, integration | statement coverage |
+| user route - should retrieve list of all group transactions| transaction, group  | unit, integration | statement coverage |
+| admin route - Unauthorized access | transaction, group  | unit, integration | statement coverage |
+| user route - Unauthorized access | transaction, group  | unit, integration | statement coverage | 
+| admin route - Group not found | transaction, group  | unit, integration | statement coverage |
+| user route - Group not found | transaction, group  | unit, integration | statement coverage |
+| admin route - raise exception | transaction, group  | unit, integration | statement coverage |
+| user route - raise exception | transaction, group  | unit, integration | statement coverage |
+| **getTransactionsByGroupByCategory** | 
+| admin route - should return the list of transactions for that group and category | transaction, group, category | unit, integration | statement coverage |
+| user route - should return the list of transactions for that group and category | transaction, group, category | unit, integration | statement coverage | 
+| admin route - should return empty list if there are no group transactions for that category | transaction, group, category | unit, integration | statement coverage |
+| user route - should return empty list if there are no group transactions for that category | transaction, group, category | unit, integration | statement coverage |
+| admin route - Unauthorized access | transaction, group, category | unit, integration | statement coverage | 
+| user route - Unauthorized access | transaction, group, category | unit, integration | statement coverage |
+| admin route - Group not found | transaction, group, category | unit, integration | statement coverage |
+| user route - Group not found | transaction, group, category | unit, integration | statement coverage |
+| admin route - Category not found | transaction, group, category | unit, integration | statement coverage |
+| user route - Category not found | transaction, group, category | unit, integration | statement coverage |
+| admin route - raise exception | transaction, group, category | unit, integration | statement coverage |
+| user route - raise exception | transaction, group, category | unit, integration | statement coverage |
+
+
+| Test case name | Object(s) tested | Test level | Technique used |
+|--|--|--|--|
+| **deleteTransaction** |
+| User request to delete an existing transaction |  transaction, authentication | unit, integration | statement coverage |
+| User request to delete a non-existing transaction |  transaction, authentication | unit, integration | statement coverage | 
+| User request to delete a transaction of a different user |  transaction, authentication | unit, integration | statement coverage |
+| User request with missing _id |  transaction, authentication | unit, integration | statement coverage |
+| Authenticated user request to delete a transaction of another user|  transaction, authentication | unit | statement coverage |
+| Invalid user |
+| req body not present |
+| transaction not found |
+| User try to delete a transaction created by another user |
+| User try to delete a transaction created by himself | 
+| **deleteTransactions** | 
+| Admin request to delete existing transactions | transaction, authentication | unit | statement coverage |
+| Admin request to delete non-existing transactions | transaction, authentication | unit | statement coverage |
+| Non-admin request to delete transactions | transaction, authentication | unit | statement coverage |
+| Invalid request with missing _ids | transaction, authentication | unit | statement coverage |
+| Invalid request with empty _id | transaction | unit, integration | statement coverage |
+| Internal server error | transaction, authentication | unit | statement coverage |
+| Not authorized | transaction, authentication | integration | statement coverage |
+| Empty _ids | transaction, authentication | integration | statement coverage |
+| Invalid single id | transaction, authentication | integration | statement coverage |
+| Id not found | transaction, authentication | integration | statement coverage |
+| Transaction correctly deleted | transaction, authentication | integration | statement coverage |
+| Transaction correctly deleted with Access token expired | transaction, authentication | integration | statement coverage |
+
+
 
 
 
@@ -144,7 +438,7 @@
 
 
 
-| Functional Requirements covered |   Integration Test(s)  | 
+| Functional Requirements covered |   Unit Test(s)  | 
 | ------------------------------- | ----------- | 
 | FR31 - createTransaction| should return the new transaction |
 || Unauthorized access |
@@ -198,7 +492,6 @@
 || user route - Category not found |
 || admin route - raise exception |
 || user route - raise exception |
-||  |
 | FR37 - deleteTransaction | User request to delete an existing transaction |
 || User request to delete a non-existing transaction |
 || User request to delete a transaction of a different user |
@@ -397,7 +690,7 @@
 ### Test coverage
 Report here the screenshot of coverage values obtained with jest-- coverage 
 
-![coverage_report](./img/testCoverage.png)
+![coverage_report](./images/testCoverage.png)
 
 # White Box Unit Tests
 

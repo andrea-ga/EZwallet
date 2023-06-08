@@ -500,7 +500,7 @@ describe("deleteUser", () => {
    });
 
 
-   test("request boby email is not present", async () => {
+   test("request body email is not present", async () => {
     let res = await request(app).delete(`/api/users`).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h'));
     expect(res.status).toBe(400)
     expect(res.body.error).toBe("Bad request")
