@@ -189,7 +189,6 @@
 | wrong request format, no field emails |  group, authentication | integration | statement coverage | 
 | No cookie | group, authentication | integration | coverage statement |
 | Group not found | group, authentication | integration | coverage statement| 
-
 | **removeFromGroup** |
 | Admin request but group has only one user | user, group, authentication | unit | statement coverage |
 | Admin request with valid group and members to remove | user, group, authentication | unit | statement coverage |
