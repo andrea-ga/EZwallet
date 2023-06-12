@@ -1,5 +1,5 @@
+import { copyFileSync } from 'fs';
 import jwt from 'jsonwebtoken'
-
 /**
  * Handle possible date filtering options in the query parameters for getTransactionsByUser when called by a Regular user.
  * @param req the request object that can contain query parameters
@@ -9,6 +9,37 @@ import jwt from 'jsonwebtoken'
  * @throws an error if the query parameters include `date` together with at least one of `from` or `upTo`
  */
 export const handleDateFilterParams = (req) => {
+    const query = req.query;
+
+    const date_regExp = new RegExp("[0-9]{4}\-[0-9]{2}\-[0-9]{2}");
+    const d = {};
+
+    if(query["from"]) {
+        if(!date_regExp.test(query["from"]))
+            throw new Error("wrong date format");
+
+        d.$gte = new Date(query["from"] + "T00:00:00.000Z");
+    }
+
+    if(query["upTo"]) {
+        if(!date_regExp.test(query["upTo"]))
+            throw new Error("wrong date format");
+
+        d.$lte = new Date(query["upTo"] + "T23:59:59.000Z");
+    }
+
+    if(query["date"]) {
+        if(query["from"] || query["upTo"])
+            throw new Error("wrong query format");
+
+        if(!date_regExp.test(query["date"]))
+            throw new Error("wrong date format");
+
+        d.$gte = new Date(query["date"] + "T00:00:00.000Z");
+        d.$lte = new Date(query["date"] + "T23:59:59.000Z");
+    }
+
+    return {date: d};
 }
 
 /**
@@ -37,27 +68,64 @@ export const handleDateFilterParams = (req) => {
  *  Refreshes the accessToken if it has expired and the refreshToken is still valid
  */
 export const verifyAuth = (req, res, info) => {
-    const cookie = req.cookies
+    const cookie = req.cookies;
     if (!cookie.accessToken || !cookie.refreshToken) {
-        res.status(401).json({ message: "Unauthorized" });
-        return false;
+        return { flag: false, cause: "Unauthorized" };
     }
     try {
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
         const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
-            res.status(401).json({ message: "Token is missing information" })
-            return false
+            return { flag: false, cause: "Token is missing information" }
         }
         if (!decodedRefreshToken.username || !decodedRefreshToken.email || !decodedRefreshToken.role) {
-            res.status(401).json({ message: "Token is missing information" })
-            return false
+            return { flag: false, cause: "Token is missing information" }
         }
         if (decodedAccessToken.username !== decodedRefreshToken.username || decodedAccessToken.email !== decodedRefreshToken.email || decodedAccessToken.role !== decodedRefreshToken.role) {
-            res.status(401).json({ message: "Mismatched users" });
-            return false;
+            return { flag: false, cause: "Mismatched users" };
         }
-        return true
+
+
+
+        if (info.authType == "User") 
+        {   
+            const  username = info.username;
+            if( decodedAccessToken.username != username || decodedRefreshToken.username !=username)
+            {                
+                return { flag: false, cause: "Unauthorized" };
+            }
+            else if( decodedAccessToken.username == username && decodedRefreshToken.username == username)
+            {
+                return { flag: true, cause: "authorized" };
+            }
+        }
+        else if (info.authType == "Admin")
+        {   
+            if( decodedAccessToken.role != "Admin" || decodedRefreshToken.role != "Admin")
+            {
+                return { flag: false, cause: "Unauthorized" };
+            }
+            else if( decodedAccessToken.role == "Admin" && decodedRefreshToken.role == "Admin")
+            {
+                return { flag: true, cause: "authorized" };
+            }   
+        }
+        else if (info.authType == "Group")  
+        {   
+            let ATfind = info.emails.map((e)=> e.email).find( e => e == decodedAccessToken.email );
+            let RTfind = info.emails.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
+            if( !ATfind || !RTfind  ) 
+            {
+                return { flag: false, cause: "Unauthorized" }; 
+            }
+            else if( ATfind  && RTfind )
+            {
+                return { flag: true, cause: "authorized" };
+            }
+        }
+             
+        
+        return { flag: true, cause: "authorized" }
     } catch (err) {
         if (err.name === "TokenExpiredError") {
             try {
@@ -69,23 +137,62 @@ export const verifyAuth = (req, res, info) => {
                     role: refreshToken.role
                 }, process.env.ACCESS_KEY, { expiresIn: '1h' })
                 res.cookie('accessToken', newAccessToken, { httpOnly: true, path: '/api', maxAge: 60 * 60 * 1000, sameSite: 'none', secure: true })
-                res.locals.message = 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
-                return true
+                res.locals.refreshedTokenMessage= 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
+                
+                  if (!refreshToken.username || !refreshToken.email || !refreshToken.role) {
+                        return { flag: false, cause: "Token is missing information" }
+                }
+
+                if (info.authType == "User")     //case of access token expired
+                {   
+                        const username = info.username;
+                        if( refreshToken.username != username)
+                        { 
+                            return { flag: false, cause: "Unauthorized" };      
+                        }
+                        else if(refreshToken.username == username)
+                        {
+                        return { flag: true, cause: "authorized" };
+                        }
+                }
+            else if (info.authType == "Admin")
+                { 
+                        if( refreshToken.role != "Admin")
+                                { 
+                                    return { flag: false, cause: "Unauthorized" };
+                                }
+                        else if(refreshToken.role == "Admin")
+                                {
+                                   return { flag: true, cause: "authorized" };
+                                }
+                }
+            else if (info.authType == "Group")  
+                {   
+                
+                        let RTfind = info.emails.map((e)=> e.email).find( e => e == refreshToken.email );
+                        if(  !RTfind )
+                        { 
+                            return { flag: false, cause: "Unauthorized" };
+                        }
+                        else if( RTfind)
+                        {
+                            return { flag: true, cause: "authorized" };
+                        }
+                }           
+                return { flag: true, cause: "authorized" }
             } catch (err) {
                 if (err.name === "TokenExpiredError") {
-                    res.status(401).json({ message: "Perform login again" });
+                    return { flag: false, cause: "Perform login again" }
                 } else {
-                    res.status(401).json({ message: err.name });
+                    return { flag: false, cause: err.name }
                 }
-                return false;
             }
+            
         } else {
-            res.status(401).json({ message: err.name });
-            return false;
+            return { flag: false, cause: err.name };
         }
     }
 }
-
 /**
  * Handle possible amount filtering options in the query parameters for getTransactionsByUser when called by a Regular user.
  * @param req the request object that can contain query parameters
@@ -94,4 +201,23 @@ export const verifyAuth = (req, res, info) => {
  *  Example: {amount: {$gte: 100}} returns all transactions whose `amount` parameter is greater or equal than 100
  */
 export const handleAmountFilterParams = (req) => {
+    const query = req.query;
+
+    const a = {};
+
+    if(query["min"]) {
+        if(isNaN(query["min"]))
+            throw new Error("the min amount value is not a number");
+
+        a.$gte = parseFloat(query["min"]);
+    }
+
+    if(query["max"]) {
+        if(isNaN(query["max"]))
+            throw new Error("the max amount value is not a number");
+
+        a.$lte = parseFloat(query["max"]);
+    }
+
+    return {amount: a};
 }

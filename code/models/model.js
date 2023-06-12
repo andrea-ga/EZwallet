@@ -13,6 +13,8 @@ const categories_model = new Schema({
         default: "#fcbe44"
     }
 
+}, {
+    timestamps: true,
 });
 
 const transaction_model = new Schema({
