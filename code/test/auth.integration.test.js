@@ -192,7 +192,7 @@ describe('logout', () => {
   let list_of_users = [{username: "tester", email: "test@test.com", password: "tester", role: "Regular"}, 
   {username: "tester2", email: "test2@test.com", password: "tester2", role: "Regular"}, 
   {username: "tester3", email: "test3@test.com", password: "tester3", role: "Admin"}]
-
+ 
   beforeAll(async () => {
     await User.deleteMany({})
     for (const c of list_of_users)
@@ -203,21 +203,21 @@ describe('logout', () => {
   test("Correct logout after login", async () => {
     let res = await request(app).post("/api/login").send({
       email: "test@test.com",
-      password : "tester"});
+      password : "tester"})
     expect(res.statusCode).toBe(200);
     
     let av= jwt.verify(res.body.data.accessToken, process.env.ACCESS_KEY)
     expect(av.username).toBe("tester");
     let rv= jwt.verify(res.body.data.refreshToken, process.env.ACCESS_KEY)
     expect(rv.username).toBe("tester");
-
-  res = await request(app).get("/api/logout").set("Cookie" , "accessToken=" + generateToken(list_of_users[2],'1h')+"; refreshToken=" + generateToken(list_of_users[2],'1h'))
-  expect(res.statusCode).toBe(200);
-  expect(res.body.data.message).toBe("logged out");
+  let res2 = await request(app).get("/api/logout").set("Cookie" , "accessToken="+ res.body.data.accessToken + "; refreshToken=" + res.body.data.refreshToken)
+  console.log(res2.body)
+  expect(res2.statusCode).toBe(200);
+  expect(res2.body.data.message).toBe("logged out");
 });
    test("Unauthorized logout", async () => {
     let res = await request(app).get("/api/logout")
-    expect(res.statusCode).toBe(401);
+    expect(res.statusCode).toBe(400);
     expect(res.body.error).toBe("Unauthorized");
   })
 

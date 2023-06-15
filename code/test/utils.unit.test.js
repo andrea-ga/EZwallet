@@ -334,7 +334,7 @@ describe("verifyAuth", () => {
             refreshedTokenMessage: undefined
           }
         }
-        const info = {authType : "Group", emails : [{email : "us@02.com"},{email : "us@03.com"},{email : "us@04.com"}]}
+        const info = {authType : "Group", emails : [ "us@02.com","us@03.com","us@04.com"]}
         let decodedAccessToken = {  username : "us02", email : "us@02.com" , role : "User"}
         let decodedRefreshToken = { username : "us02", email : "us@02.com" , role : "User"}
         jest.spyOn(jwt, 'verify').mockReturnValueOnce(decodedAccessToken).mockReturnValueOnce(decodedRefreshToken)
@@ -512,7 +512,7 @@ describe("verifyAuth", () => {
           },
           cookie : jest.fn()
         }
-        const info = {authType : "Group", emails : [{email : "us@03.com"},{email : "us@04.com"}]}
+        const info = {authType : "User"}
         let decodedRefreshToken = {id: "id123", username : "us02", email : "us@02.com" , role : "Regular"}
         jest.spyOn(jwt, 'verify').mockImplementationOnce( () => {throw Object.assign({}, {name :'TokenExpiredError'})} )
             .mockReturnValueOnce(decodedRefreshToken)

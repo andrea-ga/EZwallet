@@ -112,8 +112,9 @@ export const verifyAuth = (req, res, info) => {
         }
         else if (info.authType == "Group")  
         {   
-            let ATfind = info.emails.map((e)=> e.email).find( e => e == decodedAccessToken.email );
-            let RTfind = info.emails.map((e)=> e.email).find( e => e == decodedRefreshToken.email );
+            let ATfind = info.emails.filter( e => e == decodedAccessToken.email ).length;
+            let RTfind = info.emails.filter( e => e == decodedRefreshToken.email ).length;
+        
             if( !ATfind || !RTfind  ) 
             {
                 return { flag: false, cause: "Unauthorized" }; 
@@ -169,7 +170,7 @@ export const verifyAuth = (req, res, info) => {
             else if (info.authType == "Group")  
                 {   
                 
-                        let RTfind = info.emails.map((e)=> e.email).find( e => e == refreshToken.email );
+                        let RTfind = info.emails.filter( e => e == refreshToken.email );
                         if(  !RTfind )
                         { 
                             return { flag: false, cause: "Unauthorized" };

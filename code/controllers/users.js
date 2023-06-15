@@ -186,7 +186,7 @@ export const getGroup = async (req, res) => {
     }
     else {
       if (!group) res.status(400).json({ error: "Group not found" });
-      const groupAuth = verifyAuth(req, res, { authType: "Group", emails: group.members });
+      const groupAuth = verifyAuth(req, res, { authType: "Group", emails: group.members.map(e => e.email) });
       if (!groupAuth.flag) return res.status(401).json({ error: groupAuth.cause });
     }
     res.status(200).json({ data: {group : {name : group.name , members : group.members.map(e => ({email : e.email}))}}, refreshedTokenMessage: res.locals.refreshedTokenMessage });
@@ -227,7 +227,7 @@ export const addToGroup = async (req, res) => {
       groupfind = await Group.findOne({ name: req.params.name });
       if (!groupfind) 
         return res.status(400).json({ error: "Group not found" });
-      let groupAuth = verifyAuth(req, res, { authType: "Group", emails: groupfind.members })
+      let groupAuth = verifyAuth(req, res, { authType: "Group", emails: groupfind.members.map(e => e.email) })
       if (!groupAuth.flag) 
         return res.status(401).json({ error: groupAuth.cause });
     }
@@ -313,7 +313,7 @@ export const removeFromGroup = async (req, res) => {
     {
       if (!group) 
         return res.status(400).json({ error: "Group not found" })
-      let groupAuth = verifyAuth(req, res, { authType: "Group", emails: group.members });
+      let groupAuth = verifyAuth(req, res, { authType: "Group", emails: group.members.map(e => e.email) });
       if (!groupAuth.flag)
          return res.status(401).json({ error: groupAuth.cause });
     }
@@ -412,7 +412,6 @@ export const deleteUser = async (req, res) => {
       return res.status(400).json({ error: "Bad request" });
 
     const userFound = await User.findOne({ "email": email });
-
     // check if user exists
     if (!userFound) {
       return res.status(400).json({ error: "User not found" });
@@ -438,11 +437,12 @@ export const deleteUser = async (req, res) => {
 		await Group.updateOne({name : gf.name},{members : grouplist})
 		}
 	  }
+    
     await User.deleteOne({email : email})
-	  res.status(200).json({ data: { deletedTransactions: deletedTransactions.deletedCount, removedFromGroup: removed }, refreshToken: res.locals.refreshedTokenMessage });
+	  return res.status(200).json({ data: { deletedTransactions: deletedTransactions.deletedCount, deletedFromGroup: removed }, refreshToken: res.locals.refreshedTokenMessage });
 
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    return res.status(500).json({ error: err.message })
   }
 }
 
@@ -462,7 +462,6 @@ export const deleteGroup = async (req, res) => {   //still to implement Admin an
       return res.status(400).json({ error: "Bad request" })
     //find the group with the same name that is unique
     const groupFind = await Group.findOne({ name: name });
-    //console.log(name);  //DEBUG
     if (!groupFind) return res.status(400).json({ error: "Group not found" })
     Group.deleteOne({ name: name }).then(gr => res.status(200).json({ data: {message : "Group deleted successfully"}, refreshToken: res.locals.refreshedTokenMessage }))
       .catch(err => { throw err })

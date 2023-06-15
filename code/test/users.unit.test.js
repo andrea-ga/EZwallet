@@ -503,7 +503,7 @@ describe("getGroup", () => {
         refreshedTokenMessage: undefined
                }
       }
-    const retrievedGroup = [{ name : "g1 ", members : ["t1@t1.com", "t2@t2.com"] }]
+    const retrievedGroup = { name : "g1 ", members : [{email : "t1@t1.com"},{email: "t2@t2.com"}] }
     verifyAuth.mockReturnValueOnce({flag : true}).mockReturnValueOnce({flag : false}).mockReturnValueOnce({flag : false , cause : "Unauthorized"})
     Group.findOne.mockResolvedValue(retrievedGroup)
     
@@ -1047,7 +1047,7 @@ test("User successfully deleted and in a group", async () => {
     await deleteUser(mockReq, mockRes)
     
     expect(mockRes.status).toHaveBeenCalledWith(200)
-    expect(mockRes.json).toHaveBeenCalledWith({data : { deletedTransactions : 3 , removedFromGroup : true } , message : mockRes.locals.refreshedTokenMessage})
+    expect(mockRes.json).toHaveBeenCalledWith({data : { deletedTransactions : 3 , deletedFromGroup : true } , refreshToken : mockRes.locals.refreshedTokenMessage})
   })
 
 

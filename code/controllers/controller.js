@@ -120,16 +120,16 @@ export const deleteCategory = async (req, res) => {
             for (let type of types) {
 
                 let c = await categories.findOneAndDelete({ type: type });
-                count += 1;
             }
             let foundCategories = await categories.find({}).sort({ createdAt: 1 }).limit(1).select({ type: 1, _id: 0 })
             for (let type of types) {
 
-                await transactions.updateMany({
+                let upd = await transactions.updateMany({
                     type: type
                 }, {
                     type: foundCategories[0].type
                 })
+                count+=upd.modifiedCount;
             }
         }
         if (types.length === num_cat) {
@@ -139,16 +139,15 @@ export const deleteCategory = async (req, res) => {
 
                 if (type != foundCategories[0].type) {
                     await categories.findOneAndDelete({ type: type });
-                    count += 1
                 }
-                await transactions.updateMany({
+                let upd = await transactions.updateMany({
                     type: type
                 }, {
                     type: foundCategories[0].type
                 })
+                count+=upd.modifiedCount;
             }
         }
-
         res.status(200).json({ data: { message: "Categories deleted", count: count }, refreshedTokenMessage: res.locals.refreshedTokenMessage });
 
     } catch (error) {
@@ -430,7 +429,7 @@ export const getTransactionsByGroup = async (req, res) => {
             if (!group)
                 return res.status(400).json({error: "Group not found"});
 
-            const groupAuth = verifyAuth(req, res, {authType: "Group", emails: group.members});
+            const groupAuth = verifyAuth(req, res, {authType: "Group", emails: group.members.map(m => m.email)});
             if (!groupAuth.flag)
                 return res.status(401).json({error: groupAuth.cause});
         }
@@ -495,7 +494,7 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
             if (!group)
                 return res.status(400).json({error: "Group not found"});
 
-            const groupAuth = verifyAuth(req, res, {authType: "Group", emails: group.members});
+            const groupAuth = verifyAuth(req, res, {authType: "Group", emails: group.members.map(m => m.email)});
             if (!groupAuth.flag)
                 return res.status(401).json({error: groupAuth.cause});
         }

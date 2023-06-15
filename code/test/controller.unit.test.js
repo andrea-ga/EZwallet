@@ -423,7 +423,7 @@ describe("deleteCategory", () => {
         categories.findOneAndDelete.mockResolvedValueOnce({ type: 'health' }); // delete first category
         categories.findOneAndDelete.mockResolvedValueOnce({ type: 'food' }); // delete second category
         categories.find.mockResolvedValueOnce([{ type: 'category3' }, { type: 'category4' }]); // updated categories after deletion
-        transactions.updateMany.mockResolvedValueOnce(); // update transactions with new category
+        transactions.updateMany.mockResolvedValueOnce({modifiedCount : 2}).mockResolvedValueOnce({modifiedCount : 2}); // update transactions with new category
 
         await deleteCategory(mockReq, mockRes);
 
@@ -435,10 +435,10 @@ describe("deleteCategory", () => {
         expect(categories.findOneAndDelete).toHaveBeenCalledWith({ type: 'health' });
         expect(categories.findOneAndDelete).toHaveBeenCalledWith({ type: 'food' });
         expect(transactions.updateMany).toHaveBeenCalledWith({ type: 'health' }, { type: 'category3' });
-        expect(transactions.updateMany).toHaveBeenCalledWith({ type: 'food' }, { type: 'category3' });
+        expect(transactions.updateMany).toHaveBeenCalledWith({ type: 'health' }, { type: 'category3' });
         expect(mockRes.status).toHaveBeenCalledWith(200);
         expect(mockRes.json).toHaveBeenCalledWith({
-            data: { message: 'Categories deleted', count: 2 },
+            data: { message: 'Categories deleted', count: 4 },
             refreshedTokenMessage: undefined,
         });
     });

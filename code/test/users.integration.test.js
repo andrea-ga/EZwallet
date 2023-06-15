@@ -514,7 +514,7 @@ describe("deleteUser", () => {
     await transactions.create({username : list_of_users[3].username, type : "sport", amount : 100, date : new Date()})
     let res = await request(app).delete(`/api/users`).set("Cookie" , "accessToken=" + generateToken(list_of_users[2],'1h')+"; refreshToken=" + generateToken(list_of_users[2],'1h')).send({email : list_of_users[3].email});
     expect(res.status).toBe(200)
-    expect(res.body).toStrictEqual({ data: { deletedTransactions: 1, removedFromGroup: true } })
+    expect(res.body).toStrictEqual({ data: { deletedTransactions: 1, deletedFromGroup: true } })
   })
  test("Admin try to delete another admin", async() => {
   let res = await request(app).delete(`/api/users`).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h')).send({email : list_of_users[2].email});
@@ -525,7 +525,7 @@ describe("deleteUser", () => {
 test("Admin delete another user that the only member of a group", async () => {
     let res = await request(app).delete(`/api/users`).set("Cookie" , "accessToken=" + generateToken(list_of_users[4],'1h')+"; refreshToken=" + generateToken(list_of_users[4],'1h')).send({email : list_of_users[7].email});
     expect(res.status).toBe(200)
-    expect(res.body).toStrictEqual({ data: { deletedTransactions: 0, removedFromGroup: true } })
+    expect(res.body).toStrictEqual({ data: { deletedTransactions: 0, deletedFromGroup: true } })
     let present = await Group.findOne({name : "test_group4"})
     expect(present).toBeNull()
     let present2 = await User.findOne({email : list_of_users[7].email})

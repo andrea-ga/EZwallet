@@ -386,7 +386,7 @@ describe('logout', () => {
       test("correct logout", async () => {
         const mockReq = {
           body : {email: "mario.red@email.com", password: "securePass"},
-          refreshToken : "fihj38hd3r8hh"
+          cookies :{ refreshToken : "fihj38hd3r8hh" }
         }
         const mockRes = {
           status: jest.fn().mockReturnThis(),
@@ -397,8 +397,9 @@ describe('logout', () => {
             cookie : jest.fn()
           }
         let user = {id : "64423" , username : "marioR" ,email: "mario.red@email.com", password: "securePass", role : "Admin", refreshToken : "", accessToken :"", save : jest.fn().mockImplementationOnce(()=> true) } 
-        User.findOne.mockResolvedValueOnce(user)
         verifyAuth.mockReturnValueOnce({flag : true})
+        User.findOne.mockResolvedValueOnce(user)
+        user.save.mockResolvedValueOnce(true)
         
         await logout(mockReq, mockRes)
         
@@ -409,7 +410,7 @@ describe('logout', () => {
       test("user not found", async () => {
         const mockReq = {
           body : {email: "mario.red@email.com", password: "securePass"},
-          refreshToken : "fihj38hd3r8hh"
+         cookies :{ refreshToken : "fihj38hd3r8hh" }
         }
         const mockRes = {
           status: jest.fn().mockReturnThis(),
@@ -433,8 +434,8 @@ describe('logout', () => {
       test("Unauthorized", async () => {
         const mockReq = {
           body : {email: "mario.red@email.com", password: "securePass"},
-          refreshToken : "fihj38hd3r8hh"
-        }
+          cookies :{ refreshToken : "fihj38hd3r8hh" }       
+         }
         const mockRes = {
           status: jest.fn().mockReturnThis(),
           json: jest.fn(),
@@ -449,7 +450,7 @@ describe('logout', () => {
         
         await logout(mockReq, mockRes)
         
-        expect(mockRes.status).toHaveBeenCalledWith(401)
+        expect(mockRes.status).toHaveBeenCalledWith(400)
         expect(mockRes.json).toHaveBeenCalledWith({ error :'Unauthorized'} 
             )
       })

@@ -125,11 +125,11 @@ export const login = async (req, res) => {
  */
 export const logout = async (req, res) => {
     try {
+        
     let simpleAuth = verifyAuth(req, res, { authType: "Simple" })
-    if (!simpleAuth.flag) return res.status(401).json({error : "Unauthorized"})
-    const user = await User.findOne({ refreshToken: req.refreshToken })
+    if (!simpleAuth.flag) return res.status(400).json({error : "Unauthorized"})
+    const user = await User.findOne({ refreshToken : req.cookies.refreshToken  })
     if (!user) return res.status(400).json({error : 'user not found'})
-    
         user.refreshToken = null
         res.cookie("accessToken", "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })
         res.cookie('refreshToken', "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })

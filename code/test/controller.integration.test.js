@@ -251,7 +251,7 @@ describe("deleteCategory", () => {
     test("Try to delete all categories", async () => {
         let res = await request(app).delete("/api/categories").send({types: ["type1", "type2", "type3", "type4", "type5"]}).set("Cookie", "accessToken=" + generateToken(list_of_users[2], "1h") + "; refreshToken=" + generateToken(list_of_users[2], "1h"));
         expect(res.status).toBe(200);
-        expect(res.body).toStrictEqual({data : {message : "Categories deleted", count : 4}})
+        expect(res.body).toStrictEqual({data : {message : "Categories deleted", count : 7}})
 
         let c1 = await categories.findOne({type: "type1"})
         let c2 = await categories.findOne({type: "type2"})
@@ -298,7 +298,7 @@ describe("deleteCategory", () => {
     test("Try to delete 2 categories", async () => {
         let res = await request(app).delete("/api/categories").send({types: ["type1", "type2"]}).set("Cookie", "accessToken=" + generateToken(list_of_users[2], "1h") + "; refreshToken=" + generateToken(list_of_users[2], "1h"));
         expect(res.status).toBe(200);
-        expect(res.body).toStrictEqual({data : {message : "Categories deleted", count : 2}})
+        expect(res.body).toStrictEqual({data : {message : "Categories deleted", count : 4}})
         let c1 = await categories.findOne({type: "type1"})
         let c2 = await categories.findOne({type: "type2"})
         let c3 = await categories.findOne({type: "type3"})
